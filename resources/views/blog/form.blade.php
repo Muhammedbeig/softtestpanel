@@ -391,6 +391,15 @@
                 .block-equation::before { content: ""; display: none; }
                 .block-equation, .block-equation p, .block-equation div, .block-equation span, .block-equation code, .block-equation pre { color: #00FF88 !important; font-family: 'DM Mono', monospace !important; }
                 .block-equation p, .block-equation div { line-height: 1.8; }
+                .citation-cluster { display: inline-flex; vertical-align: super; margin-left: .12rem; }
+                .citation-ref { color: #B8FF35 !important; text-decoration: none; font-family: 'DM Mono', monospace; font-size: .78em; }
+                .citation-ref sup { color: #B8FF35 !important; }
+                .citation-popover { display: none; }
+                .article-sources { border-top: 1px solid #1E1E30; margin-top: 2rem; padding-top: 1rem; }
+                .article-sources h2 { color: #E8E8F0; font-family: 'Syne', sans-serif; }
+                .article-sources li { margin: .45rem 0; padding-left: .15rem; }
+                .custom-html-block { border: 1px dashed rgba(184, 255, 53, 0.45); border-radius: 10px; background: rgba(184, 255, 53, 0.06); color: #B8FF35; padding: 1.1rem; margin: 1.5rem 0; font-family: 'DM Mono', monospace; }
+                .custom-html-block::before { content: "HTML BLOCK"; display: block; margin-bottom: .45rem; font-size: .72rem; font-weight: 700; letter-spacing: .08em; color: #B8FF35; }
             `;
 
             tinymce.init({
@@ -398,7 +407,11 @@
                 height: 440,
                 menubar: false,
                 plugins: 'lists link table code wordcount',
-                toolbar: 'undo redo | styles | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist | link table | equationBlock | removeformat | code',
+                toolbar_mode: 'wrap',
+                toolbar: 'undo redo | formatselect styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist | link table | citationButton sourceButton equationBlock htmlBlock | removeformat | code',
+                block_formats: 'Paragraph=p; Heading 2=h2; Heading 3=h3; Heading 4=h4; Heading 5=h5; Heading 6=h6',
+                extended_valid_elements: 'section[class|id],ol[class|id],li[class|id],a[class|href|title],span[class|style],sup[class],div[class|style|data-html-block|contenteditable]',
+                valid_children: '+a[span|sup],+span[a|span|sup]',
                 formats: {
                     equationBlock: { block: 'div', classes: 'custom-block block-equation', wrapper: true }
                 },
@@ -417,17 +430,248 @@
                         { title: 'Definition', block: 'div', classes: 'custom-block block-definition', wrapper: true },
                         { title: 'Myth', block: 'div', classes: 'custom-block block-myth', wrapper: true },
                         { title: 'Problem', block: 'div', classes: 'custom-block block-problem', wrapper: true },
-                        { title: 'Equation / Formula', format: 'equationBlock' }
+                        { title: 'Equation / Formula', format: 'equationBlock' },
+                        { title: 'HTML Block', block: 'div', classes: 'custom-html-block', wrapper: true }
                     ]}
                 ],
                 content_style: customTinyMceCSS,
                 setup: function (editor) {
+                    function escapeHtml(value) {
+                        return String(value || '').replace(/[&<>"']/g, function (char) {
+                            return {
+                                '&': '&amp;',
+                                '<': '&lt;',
+                                '>': '&gt;',
+                                '"': '&quot;',
+                                "'": '&#039;'
+                            }[char];
+                        });
+                    }
+
+                    function encodeHtmlBlock(value) {
+                        return btoa(unescape(encodeURIComponent(value || '')));
+                    }
+
+                    function decodeHtmlBlock(value) {
+                        try {
+                            return decodeURIComponent(escape(atob(value || '')));
+                        } catch (e) {
+                            return '';
+                        }
+                    }
+
+                    function selectedHtmlBlock() {
+                        const node = editor.selection.getNode();
+                        return editor.dom.getParent(node, '.custom-html-block');
+                    }
+
+                    function defaultSourceTarget(sourceNumber) {
+                        const orderInput = document.querySelector('input[name="sort_order"]');
+                        const articleNumber = orderInput && orderInput.value ? orderInput.value.trim() : '';
+                        return articleNumber ? 'source-article-' + articleNumber + '-' + sourceNumber : 'source-' + sourceNumber;
+                    }
+
+                    function sourceSection() {
+                        return editor.getBody().querySelector('section.article-sources');
+                    }
+
+                    function findSourceItem(section, sourceId) {
+                        return Array.from(section.querySelectorAll('li[id]')).find(function (item) {
+                            return item.id === sourceId;
+                        });
+                    }
+
+                    function ensureSourceSection(heading) {
+                        let section = sourceSection();
+
+                        if (!section) {
+                            section = editor.dom.create('section', { class: 'article-sources' });
+                            section.appendChild(editor.dom.create('h2', {}, heading || 'Sources'));
+                            section.appendChild(editor.dom.create('ol'));
+                            editor.getBody().appendChild(section);
+                            return section;
+                        }
+
+                        const currentHeading = section.querySelector('h2');
+                        if (currentHeading && heading) {
+                            currentHeading.textContent = heading;
+                        } else if (!currentHeading) {
+                            section.insertBefore(editor.dom.create('h2', {}, heading || 'Sources'), section.firstChild);
+                        }
+
+                        if (!section.querySelector('ol')) {
+                            section.appendChild(editor.dom.create('ol'));
+                        }
+
+                        return section;
+                    }
+
+                    editor.ui.registry.addButton('citationButton', {
+                        text: 'Cite',
+                        tooltip: 'Insert citation superscript',
+                        onAction: function () {
+                            editor.windowManager.open({
+                                title: 'Insert Citation',
+                                body: {
+                                    type: 'panel',
+                                    items: [
+                                        {
+                                            type: 'input',
+                                            name: 'number',
+                                            label: 'Source number'
+                                        },
+                                        {
+                                            type: 'input',
+                                            name: 'target',
+                                            label: 'Target source ID (optional)'
+                                        },
+                                        {
+                                            type: 'textarea',
+                                            name: 'preview',
+                                            label: 'Hover preview text (optional)'
+                                        }
+                                    ]
+                                },
+                                buttons: [
+                                    { type: 'cancel', text: 'Cancel' },
+                                    { type: 'submit', text: 'Insert Cite', primary: true }
+                                ],
+                                onSubmit: function (api) {
+                                    const data = api.getData();
+                                    const sourceNumber = String(data.number || '').trim();
+
+                                    if (!sourceNumber) {
+                                        return;
+                                    }
+
+                                    const target = String(data.target || defaultSourceTarget(sourceNumber)).replace(/^#/, '').trim();
+                                    const preview = String(data.preview || 'Source ' + sourceNumber).trim();
+                                    const citation = '<span class="citation-cluster"><a class="citation-ref" href="#' + escapeHtml(target) + '"><sup>[' + escapeHtml(sourceNumber) + ']</sup><span class="citation-popover"><span class="citation-popover-title">Source ' + escapeHtml(sourceNumber) + '</span>' + escapeHtml(preview) + '</span></a></span>';
+
+                                    editor.insertContent(citation);
+                                    editor.save();
+                                    api.close();
+                                }
+                            });
+                        }
+                    });
+
+                    editor.ui.registry.addButton('sourceButton', {
+                        text: 'Source',
+                        tooltip: 'Add or update a source item',
+                        onAction: function () {
+                            editor.windowManager.open({
+                                title: 'Add Source Item',
+                                body: {
+                                    type: 'panel',
+                                    items: [
+                                        {
+                                            type: 'input',
+                                            name: 'heading',
+                                            label: 'Section heading',
+                                            placeholder: 'Sources, References, Bibliography, Resources'
+                                        },
+                                        {
+                                            type: 'input',
+                                            name: 'number',
+                                            label: 'Source number'
+                                        },
+                                        {
+                                            type: 'textarea',
+                                            name: 'citation',
+                                            label: 'Source text'
+                                        }
+                                    ]
+                                },
+                                initialData: {
+                                    heading: sourceSection()?.querySelector('h2')?.textContent?.trim() || 'Sources',
+                                    number: '',
+                                    citation: ''
+                                },
+                                buttons: [
+                                    { type: 'cancel', text: 'Cancel' },
+                                    { type: 'submit', text: 'Add Source', primary: true }
+                                ],
+                                onSubmit: function (api) {
+                                    const data = api.getData();
+                                    const sourceNumber = String(data.number || '').trim();
+
+                                    if (!sourceNumber) {
+                                        return;
+                                    }
+
+                                    const section = ensureSourceSection(String(data.heading || 'Sources').trim() || 'Sources');
+                                    const sourceId = defaultSourceTarget(sourceNumber);
+                                    const ol = section.querySelector('ol');
+                                    let item = findSourceItem(section, sourceId);
+
+                                    if (!item) {
+                                        item = editor.dom.create('li', { id: sourceId });
+                                        ol.appendChild(item);
+                                    }
+
+                                    item.innerHTML = '<p>' + escapeHtml(data.citation || 'Source ' + sourceNumber) + '</p>';
+                                    editor.selection.select(item);
+                                    editor.save();
+                                    api.close();
+                                }
+                            });
+                        }
+                    });
+
                     editor.ui.registry.addButton('equationBlock', {
                         text: 'Equation',
                         tooltip: 'Equation / Formula',
                         onAction: function () {
                             editor.formatter.toggle('equationBlock');
                             editor.save();
+                        }
+                    });
+
+                    editor.ui.registry.addButton('htmlBlock', {
+                        text: 'HTML',
+                        tooltip: 'Insert HTML/CSS/JS block',
+                        onAction: function () {
+                            const existing = selectedHtmlBlock();
+                            const initial = existing ? decodeHtmlBlock(existing.getAttribute('data-html-block') || '') : '';
+
+                            editor.windowManager.open({
+                                title: existing ? 'Edit HTML Block' : 'Insert HTML Block',
+                                size: 'large',
+                                body: {
+                                    type: 'panel',
+                                    items: [
+                                        {
+                                            type: 'textarea',
+                                            name: 'html',
+                                            label: 'HTML, CSS, and JS',
+                                            placeholder: '<div>...</div>\\n<style>...</style>\\n<script>...</scr' + 'ipt>'
+                                        }
+                                    ]
+                                },
+                                initialData: { html: initial },
+                                buttons: [
+                                    { type: 'cancel', text: 'Cancel' },
+                                    { type: 'submit', text: existing ? 'Update Block' : 'Insert Block', primary: true }
+                                ],
+                                onSubmit: function (api) {
+                                    const data = api.getData();
+                                    const encoded = encodeHtmlBlock(data.html || '');
+                                    const placeholder = '<div class="custom-html-block" data-html-block="' + encoded + '" contenteditable="false" title="Html Block" aria-label="Html Block"><p>Html Block</p></div>';
+
+                                    if (existing) {
+                                        editor.dom.setAttrib(existing, 'data-html-block', encoded);
+                                        editor.dom.setAttrib(existing, 'title', 'Html Block');
+                                        editor.dom.setAttrib(existing, 'aria-label', 'Html Block');
+                                        existing.innerHTML = '<p>Html Block</p>';
+                                    } else {
+                                        editor.insertContent(placeholder + '<p></p>');
+                                    }
+
+                                    editor.save();
+                                    api.close();
+                                }
+                            });
                         }
                     });
 
