@@ -52,6 +52,15 @@
     }
 
     $faqItems = array_values(is_array($faqItems) ? $faqItems : []);
+
+    $plainFaqText = static function ($value) {
+        $value = (string) ($value ?? '');
+        $value = preg_replace('/<\s*br\s*\/?>/i', "\n", $value);
+        $value = preg_replace('/<\/p>\s*<p[^>]*>/i', "\n\n", $value);
+        $value = preg_replace('/<\/(div|li|h[1-6])>/i', "\n", $value);
+
+        return trim(html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    };
 @endphp
 
 <div class="card">
@@ -149,6 +158,23 @@
                 <div class="form-group">
                     <label>{{ __('Published At') }}</label>
                     <input type="datetime-local" name="published_at" class="form-control" value="{{ old('published_at', $blog?->published_at?->format('Y-m-d\TH:i')) }}">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label>{{ __('Updated On') }}</label>
+                    <input type="date" name="updated_on" class="form-control" value="{{ old('updated_on', $blog?->updated_on?->format('Y-m-d')) }}">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label>{{ __('Updated By') }}</label>
+                    <select name="updated_by_author_id" class="form-control">
+                        <option value="">{{ __('Select Author') }}</option>
+                        @foreach($authors as $author)
+                            <option value="{{ $author->id }}" @selected(old('updated_by_author_id', $blog?->updated_by_author_id) == $author->id)>{{ $author->name }}</option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
             <div class="col-md-6">
@@ -329,7 +355,7 @@
                         <div class="col-md-12">
                             <div class="form-group">
                                 <label>{{ __('Answer') }}</label>
-                                <textarea class="form-control faq-field" data-name="answer" name="faqs[{{ $index }}][answer]" rows="3" placeholder="{{ __('Answer shown on article') }}">{{ $faq['answer'] ?? '' }}</textarea>
+                                <textarea class="form-control faq-field" data-name="answer" name="faqs[{{ $index }}][answer]" rows="3" placeholder="{{ __('Answer shown on article') }}">{{ $plainFaqText($faq['answer'] ?? '') }}</textarea>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -355,7 +381,7 @@
                         <div class="col-md-6 mt-3">
                             <div class="form-group">
                                 <label>{{ __('Schema Answer Override') }}</label>
-                                <textarea class="form-control faq-field" data-name="schema_answer" name="faqs[{{ $index }}][schema_answer]" rows="2" placeholder="{{ __('Optional') }}">{{ $faq['schema_answer'] ?? '' }}</textarea>
+                                <textarea class="form-control faq-field" data-name="schema_answer" name="faqs[{{ $index }}][schema_answer]" rows="2" placeholder="{{ __('Optional') }}">{{ $plainFaqText($faq['schema_answer'] ?? '') }}</textarea>
                             </div>
                         </div>
                     </div>
@@ -374,6 +400,8 @@
 @section('script')
     <script>
         document.addEventListener("DOMContentLoaded", () => {
+            const editorImageUploadUrl = @json(route('blog.upload-editor-image'));
+            const csrfToken = @json(csrf_token());
             const customTinyMceCSS = `
                 body { font-family: 'DM Sans', sans-serif; background: #07070F; color: #E8E8F0; }
                 .custom-block { border: 1px solid #1E1E30; background: #0F0F1A; border-radius: 12px; padding: 1.5rem; margin: 2rem 0; position: relative; font-family: 'DM Sans', sans-serif; color: #E8E8F0; }
@@ -411,9 +439,9 @@
                 menubar: false,
                 plugins: 'lists link table code wordcount',
                 toolbar_mode: 'wrap',
-                toolbar: 'undo redo | formatselect styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist | link table | citationButton sourceButton equationBlock htmlBlock | removeformat | code',
+                toolbar: 'undo redo | formatselect styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist | link table imageUpload | citationButton sourceButton equationBlock htmlBlock | removeformat | code',
                 block_formats: 'Paragraph=p; Heading 2=h2; Heading 3=h3; Heading 4=h4; Heading 5=h5; Heading 6=h6',
-                extended_valid_elements: 'section[class|id],ol[class|id],li[class|id],a[class|href|title],span[class|style],sup[class],div[class|style|data-html-block|contenteditable]',
+                extended_valid_elements: 'section[class|id],ol[class|id],li[class|id],a[class|href|title],span[class|style],sup[class],div[class|style|data-html-block|contenteditable],img[src|alt|title|width|height|style|class|loading]',
                 valid_children: '+a[span|sup],+span[a|span|sup]',
                 formats: {
                     equationBlock: { block: 'div', classes: 'custom-block block-equation', wrapper: true }
@@ -461,6 +489,56 @@
                         } catch (e) {
                             return '';
                         }
+                    }
+
+                    function uploadImageAtSelection() {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/jpeg,image/png,image/webp';
+
+                        input.addEventListener('change', function () {
+                            const file = input.files && input.files[0];
+                            if (!file) return;
+
+                            const formData = new FormData();
+                            formData.append('image', file);
+
+                            fetch(editorImageUploadUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-TOKEN': csrfToken,
+                                    'Accept': 'application/json',
+                                },
+                                body: formData,
+                            })
+                                .then(function (response) {
+                                    if (!response.ok) {
+                                        throw new Error('Upload failed');
+                                    }
+
+                                    return response.json();
+                                })
+                                .then(function (payload) {
+                                    const imageUrl = payload.url || payload.location;
+                                    if (!imageUrl) {
+                                        throw new Error('Missing image URL');
+                                    }
+
+                                    const baseName = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim();
+                                    editor.insertContent(
+                                        '<img src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(baseName) + '" loading="lazy" style="max-width:100%;height:auto;" /><p></p>'
+                                    );
+                                    editor.save();
+                                })
+                                .catch(function () {
+                                    editor.notificationManager.open({
+                                        text: 'Image upload failed.',
+                                        type: 'error',
+                                    });
+                                });
+                        });
+
+                        input.click();
                     }
 
                     function selectedHtmlBlock() {
@@ -620,6 +698,12 @@
                                 }
                             });
                         }
+                    });
+
+                    editor.ui.registry.addButton('imageUpload', {
+                        text: 'Upload',
+                        tooltip: 'Upload image at cursor',
+                        onAction: uploadImageAtSelection
                     });
 
                     editor.ui.registry.addButton('equationBlock', {

@@ -70,6 +70,7 @@ Route::group(['middleware' => ['auth', 'language']], static function () {
     });
     Route::resource('staff', StaffController::class);
 
+    Route::post('blog/upload-editor-image', [BlogController::class, 'uploadEditorImage'])->name('blog.upload-editor-image');
     Route::resource('blog', BlogController::class);
     Route::get('category/order', [CategoryController::class, 'categoriesReOrder'])->name('category.order');
     Route::get('category/{id}/sub-order', [CategoryController::class, 'subCategoriesReOrder'])->name('sub.category.order.change');

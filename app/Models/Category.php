@@ -21,6 +21,7 @@ class Category extends Model
         'accent_color',
         'slug',
         'status',
+        'is_coming_soon',
         'description',
         'series_description',
         'series_content',
@@ -36,6 +37,7 @@ class Category extends Model
 
     protected $casts = [
         'status' => 'boolean',
+        'is_coming_soon' => 'boolean',
         'show_in_header_nav' => 'boolean',
         'show_in_mobile_nav' => 'boolean',
         'header_nav_order' => 'integer',

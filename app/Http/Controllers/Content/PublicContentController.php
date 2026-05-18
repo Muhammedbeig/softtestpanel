@@ -33,7 +33,7 @@ class PublicContentController extends Controller
 
     public function blogs(Request $request)
     {
-        $query = Blog::with(['seriesCategory:id,name,slug,series_title,accent_color', 'author:id,name,slug,role,bio,avatar,status', 'additionalAuthors', 'reviewers', 'editors'])
+        $query = Blog::with(['seriesCategory:id,name,slug,series_title,accent_color', 'author:id,name,slug,role,bio,avatar,status', 'updatedByAuthor:id,name,slug,role,bio,avatar,status', 'additionalAuthors', 'reviewers', 'editors'])
             ->where('status', 'published')
             ->when($request->boolean('featured'), fn ($q) => $q->where('is_featured', true))
             ->when($request->filled('category'), function ($q) use ($request) {
@@ -77,7 +77,7 @@ class PublicContentController extends Controller
 
     public function blog(string $slug)
     {
-        $blog = Blog::with(['seriesCategory', 'author:id,name,slug,role,bio,avatar,status', 'additionalAuthors', 'reviewers', 'editors', 'faqs'])
+        $blog = Blog::with(['seriesCategory', 'author:id,name,slug,role,bio,avatar,status', 'updatedByAuthor:id,name,slug,role,bio,avatar,status', 'additionalAuthors', 'reviewers', 'editors', 'faqs'])
             ->where('slug', $slug)
             ->where('status', 'published')
             ->firstOrFail();
@@ -219,6 +219,7 @@ class PublicContentController extends Controller
             'tags' => $blog->tags,
             'readTime' => $blog->read_time ?: $this->estimateReadTime($description),
             'date' => optional($blog->published_at ?? $blog->created_at)->format('M j, Y'),
+            'updatedOn' => $blog->updated_on ? $blog->updated_on->format('M j, Y') : null,
             'accent' => $blog->accent_color ?: '#B8FF35',
             'sort_order' => (int) ($blog->sort_order ?? 0),
             'attributes' => $this->normalizeAttributes($blog->content_attributes),
@@ -228,6 +229,7 @@ class PublicContentController extends Controller
             'metaTitle' => $blog->meta_title,
             'metaDescription' => $blog->meta_description,
             'author' => $blog->author,
+            'updatedBy' => $blog->updatedByAuthor,
             'additionalAuthors' => $blog->additionalAuthors,
             'reviewers' => $blog->reviewers,
             'editors' => $blog->editors,
@@ -357,6 +359,8 @@ class PublicContentController extends Controller
             'header_nav_order' => (int) $category->header_nav_order,
             'show_in_mobile_nav' => (bool) $category->show_in_mobile_nav,
             'mobile_nav_order' => (int) $category->mobile_nav_order,
+            'isComingSoon' => (bool) $category->is_coming_soon,
+            'is_coming_soon' => (bool) $category->is_coming_soon,
             'meta_title' => $category->meta_title,
             'meta_description' => $category->meta_description,
             'articles' => $articles->map(fn (Blog $article) => $this->articleSummaryPayload($article))->values(),

@@ -28,6 +28,8 @@ class Blog extends Model {
         'is_featured',
         'status',
         'published_at',
+        'updated_on',
+        'updated_by_author_id',
         'meta_title',
         'meta_description',
     ];
@@ -35,6 +37,7 @@ class Blog extends Model {
     protected $casts = [
         'is_featured' => 'boolean',
         'published_at' => 'datetime',
+        'updated_on' => 'date',
         'sort_order' => 'integer',
         'content_attributes' => 'array',
     ];
@@ -47,6 +50,10 @@ class Blog extends Model {
 
     public function author() {
         return $this->belongsTo(Author::class);
+    }
+
+    public function updatedByAuthor() {
+        return $this->belongsTo(Author::class, 'updated_by_author_id');
     }
 
     public function additionalAuthors() {

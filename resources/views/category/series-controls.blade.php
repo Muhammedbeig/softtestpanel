@@ -47,6 +47,14 @@
                     <label class="form-check-label" for="show_in_mobile_nav">{{ __('Show in mobile bottom nav') }}</label>
                 </div>
             </div>
+            <div class="col-md-6">
+                <input type="hidden" name="is_coming_soon" value="0">
+                <div class="form-check form-switch mt-2">
+                    <input class="form-check-input" type="checkbox" name="is_coming_soon" value="1" id="is_coming_soon" @checked(old('is_coming_soon', $category_data?->is_coming_soon ?? false))>
+                    <label class="form-check-label" for="is_coming_soon">{{ __('Mark as Coming Soon') }}</label>
+                </div>
+                <small class="text-muted">{{ __('Use this for frontend series that are visible before articles are ready.') }}</small>
+            </div>
             <div class="col-md-12 mt-3">
                 <div class="form-group">
                     <label>{{ __('Frontend Description') }}</label>

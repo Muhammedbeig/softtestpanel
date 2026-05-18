@@ -16,6 +16,7 @@ use App\Services\ResponseService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Throwable;
@@ -74,6 +75,8 @@ class BlogController extends Controller
                 'is_featured' => $request->boolean('is_featured'),
                 'status' => $status,
                 'published_at' => $request->input('published_at') ?: ($status === 'published' ? now() : null),
+                'updated_on' => $request->input('updated_on') ?: null,
+                'updated_by_author_id' => $request->input('updated_by_author_id') ?: null,
                 'meta_title' => $request->input('meta_title'),
                 'meta_description' => $request->input('meta_description'),
             ];
@@ -156,7 +159,7 @@ class BlogController extends Controller
     {
         ResponseService::noPermissionThenRedirect('blog-update');
 
-        $blog = Blog::with(['translations', 'seriesCategory', 'additionalAuthors', 'reviewers', 'editors', 'faqs'])->findOrFail($id);
+        $blog = Blog::with(['translations', 'seriesCategory', 'additionalAuthors', 'reviewers', 'editors', 'faqs', 'updatedByAuthor'])->findOrFail($id);
         $authors = Author::where('status', true)->orderBy('name')->get();
         $categories = Category::where('status', true)->orderBy('sequence')->orderBy('name')->get();
         $languages = CachingService::getLanguages()->values();
@@ -198,6 +201,8 @@ class BlogController extends Controller
                 'is_featured' => $request->boolean('is_featured'),
                 'status' => $status,
                 'published_at' => $request->input('published_at') ?: ($status === 'published' ? ($blog->published_at ?: now()) : null),
+                'updated_on' => $request->input('updated_on') ?: null,
+                'updated_by_author_id' => $request->input('updated_by_author_id') ?: null,
                 'meta_title' => $request->input('meta_title'),
                 'meta_description' => $request->input('meta_description'),
             ];
@@ -236,6 +241,28 @@ class BlogController extends Controller
         }
     }
 
+    public function uploadEditorImage(Request $request)
+    {
+        ResponseService::noAnyPermissionThenSendJson(['blog-create', 'blog-update']);
+
+        $request->validate([
+            'image' => ['required', 'mimes:jpg,jpeg,png,webp', 'max:7168'],
+        ]);
+
+        $path = FileService::compressAndUpload($request->file('image'), 'blog/editor');
+
+        if (! $path) {
+            return response()->json(['message' => 'Image upload failed'], 422);
+        }
+
+        $url = url(Storage::url($path));
+
+        return response()->json([
+            'location' => $url,
+            'url' => $url,
+        ]);
+    }
+
     private function rules(?int $ignoreId = null): array
     {
         return [
@@ -244,6 +271,8 @@ class BlogController extends Controller
             'category_id' => ['nullable', 'exists:categories,id'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'author_id' => ['nullable', 'exists:authors,id'],
+            'updated_on' => ['nullable', 'date'],
+            'updated_by_author_id' => ['nullable', 'exists:authors,id'],
             'image' => ['nullable', 'mimes:jpg,jpeg,png,webp', 'max:7168'],
             'status' => ['required', Rule::in(['draft', 'published'])],
             'accent_color' => ['nullable', 'string', 'max:20'],
@@ -352,7 +381,7 @@ class BlogController extends Controller
         $rows = collect($request->input('faqs', []))
             ->map(function ($faq, $index) {
                 $question = trim((string) ($faq['question'] ?? ''));
-                $answer = trim((string) ($faq['answer'] ?? ''));
+                $answer = $this->normalizeFaqAnswer($faq['answer'] ?? '');
 
                 if ($question === '' || $answer === '') {
                     return null;
@@ -378,6 +407,36 @@ class BlogController extends Controller
         $rows->each(function (array $row) use ($blog) {
             $blog->faqs()->create($row);
         });
+    }
+
+    private function normalizeFaqAnswer(?string $answer): string
+    {
+        $answer = trim((string) $answer);
+
+        if ($answer === '') {
+            return '';
+        }
+
+        if (preg_match('/<(p|div|ul|ol|li|blockquote|table|h[1-6]|br)\b/i', $answer)) {
+            return $answer;
+        }
+
+        $paragraphs = preg_split('/\R{2,}/u', str_replace(["\r\n", "\r"], "\n", $answer)) ?: [];
+
+        return collect($paragraphs)
+            ->map(function (string $paragraph) {
+                $paragraph = trim($paragraph);
+
+                if ($paragraph === '') {
+                    return null;
+                }
+
+                $escaped = htmlspecialchars($paragraph, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+                return '<p>'.nl2br($escaped, false).'</p>';
+            })
+            ->filter()
+            ->implode('');
     }
 
     private function estimateReadTime(?string $html): string

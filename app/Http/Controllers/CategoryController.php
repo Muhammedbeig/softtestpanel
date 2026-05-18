@@ -62,6 +62,7 @@ class CategoryController extends Controller {
             'header_nav_order' => 'nullable|integer|min:0',
             'show_in_mobile_nav' => 'nullable|boolean',
             'mobile_nav_order' => 'nullable|integer|min:0',
+            'is_coming_soon' => 'nullable|boolean',
             'meta_title' => 'nullable|string|max:512',
             'meta_description' => 'nullable|string',
             'articles' => 'nullable|string',
@@ -95,6 +96,7 @@ class CategoryController extends Controller {
                 'header_nav_order' => (int) $request->input('header_nav_order', 0),
                 'show_in_mobile_nav' => $request->boolean('show_in_mobile_nav'),
                 'mobile_nav_order' => (int) $request->input('mobile_nav_order', 0),
+                'is_coming_soon' => $request->boolean('is_coming_soon'),
                 'meta_title' => $request->input('meta_title'),
                 'meta_description' => $request->input('meta_description'),
                 'parent_category_id' => $request->parent_category_id,
@@ -195,6 +197,7 @@ class CategoryController extends Controller {
             $tempRow['series_title'] = $row->series_title ?: $row->name;
             $tempRow['header_nav'] = $row->show_in_header_nav ? __('Yes') . ' (' . $row->header_nav_order . ')' : __('No');
             $tempRow['mobile_nav'] = $row->show_in_mobile_nav ? __('Yes') . ' (' . $row->mobile_nav_order . ')' : __('No');
+            $tempRow['is_coming_soon'] = $row->is_coming_soon ? __('Yes') : __('No');
             $tempRow['operate'] = $operate;
             $tempRow['advertisements_count'] = $row->all_items_count;
             $rows[] = $tempRow;
@@ -262,6 +265,7 @@ class CategoryController extends Controller {
                 'header_nav_order' => 'nullable|integer|min:0',
                 'show_in_mobile_nav' => 'nullable|boolean',
                 'mobile_nav_order' => 'nullable|integer|min:0',
+                'is_coming_soon' => 'nullable|boolean',
                 'meta_title' => 'nullable|string|max:512',
                 'meta_description' => 'nullable|string',
                 'articles' => 'nullable|string',
@@ -299,6 +303,7 @@ class CategoryController extends Controller {
                 'header_nav_order' => (int) $request->input('header_nav_order', 0),
                 'show_in_mobile_nav' => $request->boolean('show_in_mobile_nav'),
                 'mobile_nav_order' => (int) $request->input('mobile_nav_order', 0),
+                'is_coming_soon' => $request->boolean('is_coming_soon'),
                 'meta_title' => $request->input('meta_title'),
                 'meta_description' => $request->input('meta_description'),
                 'parent_category_id' => $request->parent_category_id,
