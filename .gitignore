@@ -15,6 +15,13 @@ public/hot
 public_html/storage
 public_html/hot
 
+# Never ship cached config/routes/views — they contain local values
+/bootstrap/cache/config.php
+/bootstrap/cache/routes*.php
+/bootstrap/cache/services.php
+/bootstrap/cache/packages.php
+/bootstrap/cache/*.tmp
+
 storage/*.key
 .env
 Homestead.yaml
