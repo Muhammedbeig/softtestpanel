@@ -299,11 +299,6 @@ class CategoryController extends Controller {
                 'series_content' => $request->input('series_content'),
                 'icon' => $request->input('icon'),
                 'accent_color' => $request->input('accent_color') ?: '#B8FF35',
-                'show_in_header_nav' => $request->boolean('show_in_header_nav'),
-                'header_nav_order' => (int) $request->input('header_nav_order', 0),
-                'show_in_mobile_nav' => $request->boolean('show_in_mobile_nav'),
-                'mobile_nav_order' => (int) $request->input('mobile_nav_order', 0),
-                'is_coming_soon' => $request->boolean('is_coming_soon'),
                 'meta_title' => $request->input('meta_title'),
                 'meta_description' => $request->input('meta_description'),
                 'parent_category_id' => $request->parent_category_id,
@@ -311,7 +306,23 @@ class CategoryController extends Controller {
                 'is_job_category' => $request->is_job_category ?? 0,
                 'price_optional' => $request->price_optional ?? 0,
             ];
-            
+
+            if ($request->has('show_in_header_nav')) {
+                $data['show_in_header_nav'] = $request->boolean('show_in_header_nav');
+            }
+            if ($request->has('header_nav_order')) {
+                $data['header_nav_order'] = (int) $request->input('header_nav_order', 0);
+            }
+            if ($request->has('show_in_mobile_nav')) {
+                $data['show_in_mobile_nav'] = $request->boolean('show_in_mobile_nav');
+            }
+            if ($request->has('mobile_nav_order')) {
+                $data['mobile_nav_order'] = (int) $request->input('mobile_nav_order', 0);
+            }
+            if ($request->has('is_coming_soon')) {
+                $data['is_coming_soon'] = $request->boolean('is_coming_soon');
+            }
+
             if ($request->hasFile('image')) {
                 $data['image'] = FileService::compressAndReplace($request->file('image'), $this->uploadFolder, $category->getRawOriginal('image'));
             }
@@ -555,9 +566,13 @@ class CategoryController extends Controller {
 
     private function syncArticles(Category $category, ?string $articlesInput): void
     {
-        $articles = json_decode($articlesInput ?: '[]', true);
+        if ($articlesInput === null) {
+            return;
+        }
+
+        $articles = json_decode($articlesInput, true);
         if (! is_array($articles)) {
-            $articles = [];
+            return;
         }
 
         $articleIds = collect($articles)

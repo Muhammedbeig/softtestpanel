@@ -21,16 +21,16 @@ class SearchEngineBasicsSiteSeeder extends Seeder
     private const TODAY = '2026-05-20 09:00:00';
 
     private array $articleSlugs = [
-        1 => 'what-is-information-retrieval',
-        2 => 'what-is-the-vector-space-model-how-documents-become-numbers-and-why-that-changes-everything',
-        3 => 'tf-idf-and-bm25-the-mathematics-of-keyword-relevance-and-why-repetition-stops-helping',
-        4 => 'pagerank-how-brin-and-page-replaced-word-counting-with-link-counting',
-        5 => 'hubs-and-authorities-how-kleinbergs-hits-algorithm-explains-why-niche-links-beat-generic-ones',
-        6 => 'crawl-index-rank-the-search-engine-pipeline-that-decides-whether-your-page-exists-to-google',
-        7 => 'from-strings-to-things-how-googles-knowledge-graph-and-hummingbird-update-changed-what-relevant-means',
-        8 => 'learning-to-rank-how-machine-learning-replaced-the-200-factor-checklist',
-        9 => 'map-mrr-and-ndcg-the-metrics-that-define-what-better-rankings-actually-mean',
-        10 => 'the-ethics-of-search-the-business-model-that-funds-it-and-what-seo-actually-is',
+        1  => 'what-is-information-retrieval',
+        2  => 'vector-space-model',
+        3  => 'tf-idf-bm25-explained',
+        4  => 'pagerank-algorithm-explained',
+        5  => 'hits-algorithm-explained',
+        6  => 'crawl-index-rank-pipeline',
+        7  => 'knowledge-graph-hummingbird',
+        8  => 'learning-to-rank',
+        9  => 'map-mrr-ndcg-explained',
+        10 => 'seo-ethics-explained',
     ];
 
     public function run(): void
@@ -38,6 +38,7 @@ class SearchEngineBasicsSiteSeeder extends Seeder
         $authors = $this->seedAuthors();
         $this->seedSettings();
         $this->seedHomeSeo();
+        $this->seedCategories();
         $category = Category::where('slug', self::SERIES_SLUG)->first();
 
         if ($category) {
@@ -166,20 +167,83 @@ class SearchEngineBasicsSiteSeeder extends Seeder
         );
     }
 
+    private function seedCategories(): void
+    {
+        $categories = [
+            [
+                'slug'               => 'search-engine-crawling',
+                'name'               => 'Crawling',
+                'series_title'       => 'Crawling',
+                'description'        => 'How Googlebot discovers your pages by following links across the web.',
+                'series_description' => 'How Googlebot discovers your pages by following links across the web.',
+                'accent_color'       => '#b8ff35',
+                'icon'               => '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>',
+                'status'             => true,
+                'is_coming_soon'     => true,
+                'show_in_header_nav' => true,
+                'show_in_mobile_nav' => true,
+                'header_nav_order'   => 2,
+                'mobile_nav_order'   => 2,
+                'meta_title'         => 'What is search engine crawling? (2026 guide)',
+                'meta_description'   => 'Search engine crawling is how Google discovers your pages. Learn how Googlebot works, crawl budget, and how to ensure important pages get crawled.',
+            ],
+            [
+                'slug'               => 'search-engine-indexing',
+                'name'               => 'Indexing',
+                'series_title'       => 'Indexing',
+                'description'        => 'What happens after a page is crawled — and why some pages never make it into the index.',
+                'series_description' => 'What happens after a page is crawled — and why some pages never make it into the index.',
+                'accent_color'       => '#b8ff35',
+                'icon'               => '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>',
+                'status'             => true,
+                'is_coming_soon'     => true,
+                'show_in_header_nav' => true,
+                'show_in_mobile_nav' => true,
+                'header_nav_order'   => 3,
+                'mobile_nav_order'   => 3,
+                'meta_title'         => 'What is search engine indexing? (2026 guide)',
+                'meta_description'   => 'Search engine indexing is how Google stores and organizes your content. Learn the inverted index, canonicalization, and what determines if a page gets indexed.',
+            ],
+            [
+                'slug'               => 'search-engine-ranking',
+                'name'               => 'Ranking',
+                'series_title'       => 'Ranking',
+                'description'        => 'The signals, weights, and machine learning systems that decide which page wins position #1.',
+                'series_description' => 'The signals, weights, and machine learning systems that decide which page wins position #1.',
+                'accent_color'       => '#b8ff35',
+                'icon'               => '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
+                'status'             => true,
+                'is_coming_soon'     => true,
+                'show_in_header_nav' => true,
+                'show_in_mobile_nav' => true,
+                'header_nav_order'   => 4,
+                'mobile_nav_order'   => 4,
+                'meta_title'         => 'What is search engine ranking? (2026 guide)',
+                'meta_description'   => 'Search engine ranking decides which pages appear first. Learn the signals Google weighs, from PageRank to machine learning, and how to improve your positions.',
+            ],
+        ];
+
+        foreach ($categories as $data) {
+            $slug = $data['slug'];
+            unset($data['slug']);
+            Category::updateOrCreate(['slug' => $slug], $data);
+        }
+    }
+
     private function seedMissingFoundationArticles(Category $category, array $authors): void
     {
         $foundation = [
             1 => [
                 'title' => 'What Is Information Retrieval? The Core Problem Every Search Engine Solves',
                 'excerpt' => 'Before search engines existed, IR researchers were solving the same core problem: how do you retrieve a relevant document from a large collection? This article defines the field\'s core concepts, precision, recall, relevance, and the recall-precision tradeoff, grounding every later topic in a rigorous framework rather than marketing folklore.',
-                'meta_title' => 'What Is Information Retrieval? Precision, Recall, Relevance & Search',
-                'meta_description' => 'Information retrieval (IR) is the science of finding relevant documents inside large collections. Learn what precision, recall, and relevance mean.',
+                'meta_title' => 'What is information retrieval? (2026 guide)',
+                'meta_description' => 'Information retrieval is the science of finding relevant documents. Learn precision, recall, relevance, and why these concepts explain how search engines work.',
             ],
             2 => [
                 'title' => 'What Is the Vector Space Model? How Documents Become Numbers (and Why That Changes Everything)',
                 'excerpt' => 'The Vector Space Model represents documents and queries as mathematical vectors, making it possible to compare meaning through distance, angle, and weighted terms instead of simple keyword presence.',
-                'meta_title' => 'Vector Space Model: How Documents Become Search Vectors',
-                'meta_description' => 'Learn how the Vector Space Model turns words into numbers, why cosine similarity matters, and how TF-IDF connects classic IR to semantic search.',
+                'meta_title' => 'What is the vector space model? (2026 guide)',
+                'meta_description' => 'The vector space model turns documents into vectors. Learn cosine similarity, TF weighting, and why this 1975 idea still powers BERT and modern search.',
             ],
         ];
 
@@ -236,13 +300,12 @@ class SearchEngineBasicsSiteSeeder extends Seeder
                 "blog/article{$number}.png"
             );
 
-            $primarySlug = in_array($number, $mathArticles, true)
-                ? 'muhammad-baig'
-                : ($number % 2 === 0 ? 'sohaib-hayder' : 'muhammad-zia');
+            $primarySlug = $number === 10
+                ? 'muhammad-furquan'
+                : (in_array($number, $mathArticles, true)
+                    ? 'muhammad-baig'
+                    : ($number % 2 === 0 ? 'sohaib-hayder' : 'muhammad-zia'));
             $primary = $authors[$primarySlug] ?? Author::query()->first();
-            $contributors = in_array($number, $mathArticles, true)
-                ? ['imdad-ullah-khan-phd', 'muhammad-furquan', $number % 2 === 0 ? 'muhammad-zia' : 'sohaib-hayder']
-                : ['muhammad-baig', 'imdad-ullah-khan-phd', 'muhammad-furquan'];
 
             $publishedAt = $blog->published_at ? Carbon::parse($blog->published_at) : $capDate;
             if ($publishedAt->greaterThan($capDate)) {
@@ -259,21 +322,6 @@ class SearchEngineBasicsSiteSeeder extends Seeder
             ]);
 
             DB::table('blog_contributors')->where('blog_id', $blog->id)->delete();
-
-            foreach ($contributors as $contributorSlug) {
-                $author = $authors[$contributorSlug] ?? null;
-                if (! $author || $author->id === $primary?->id) {
-                    continue;
-                }
-
-                DB::table('blog_contributors')->insert([
-                    'blog_id' => $blog->id,
-                    'author_id' => $author->id,
-                    'contribution_type' => 'author',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
 
             foreach (['imdad-ullah-khan-phd' => 'reviewer', 'muhammad-furquan' => 'editor'] as $authorSlug => $role) {
                 $author = $authors[$authorSlug] ?? null;

@@ -199,7 +199,6 @@ class BlogController extends Controller
                     $blog->content_attributes ?? [],
                     $request->boolean('content_attributes_touched')
                 ),
-                'is_featured' => $request->boolean('is_featured'),
                 'status' => $status,
                 'published_at' => $request->input('published_at') ?: ($status === 'published' ? ($blog->published_at ?: now()) : null),
                 'updated_on' => $request->input('updated_on') ?: null,
@@ -210,6 +209,10 @@ class BlogController extends Controller
 
             if ($request->hasFile('image')) {
                 $data['image'] = FileService::compressAndReplace($request->file('image'), $this->uploadFolder, $blog->getRawOriginal('image'));
+            }
+
+            if ($request->has('is_featured')) {
+                $data['is_featured'] = $request->boolean('is_featured');
             }
 
             $blog->update($data);
@@ -301,6 +304,15 @@ class BlogController extends Controller
 
     private function syncContributors(Blog $blog, Request $request): void
     {
+        $contributorFieldsPresent = $request->has('additional_authors')
+            || $request->has('reviewers')
+            || $request->has('editors')
+            || $request->boolean('contributors_touched');
+
+        if (! $contributorFieldsPresent) {
+            return;
+        }
+
         $rows = [];
         foreach ($request->input('additional_authors', []) as $authorId) {
             $rows[] = ['author_id' => (int) $authorId, 'contribution_type' => 'author'];
@@ -366,7 +378,7 @@ class BlogController extends Controller
 
     private function syncAttributePresets(Request $request): void
     {
-        if (! $request->boolean('attribute_presets_touched')) {
+        if (! $request->boolean('attribute_presets_touched') || ! $request->has('attribute_presets')) {
             return;
         }
 
@@ -386,7 +398,14 @@ class BlogController extends Controller
 
     private function syncArticleFaqs(Blog $blog, Request $request): void
     {
-        if (! $request->has('faqs') && ! $request->boolean('faqs_touched')) {
+        $hasFaqContent = collect($request->input('faqs', []))
+            ->contains(function ($faq) {
+                $question = trim((string) ($faq['question'] ?? ''));
+                $answer = trim((string) ($faq['answer'] ?? ''));
+                return $question !== '' || $answer !== '';
+            });
+
+        if (! $hasFaqContent && ! $request->boolean('faqs_touched')) {
             return;
         }
 

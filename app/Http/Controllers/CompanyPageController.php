@@ -128,7 +128,7 @@ class CompanyPageController extends Controller
 
     private function pageData(Request $request, ?int $ignoreId = null): array
     {
-        return [
+        $data = [
             'page_key' => Str::slug($request->input('page_key')),
             'title' => $request->input('title'),
             'slug' => $this->uniqueSlug($request->input('slug') ?: $request->input('title'), $ignoreId),
@@ -136,9 +136,16 @@ class CompanyPageController extends Controller
             'content' => $request->input('content'),
             'meta_title' => $request->input('meta_title'),
             'meta_description' => $request->input('meta_description'),
-            'status' => $request->boolean('status'),
             'published_at' => $request->input('published_at') ?: now(),
         ];
+
+        if ($request->has('status')) {
+            $data['status'] = $request->boolean('status');
+        } elseif ($ignoreId === null) {
+            $data['status'] = true;
+        }
+
+        return $data;
     }
 
     private function uniqueSlug(string $value, ?int $ignoreId = null): string

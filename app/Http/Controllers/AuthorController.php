@@ -110,8 +110,11 @@ class AuthorController extends Controller
         try {
             $data = $request->only(['name', 'role', 'bio', 'email', 'website_url']);
             $data['slug'] = $this->uniqueSlug($request->input('slug') ?: $request->input('name'), $author->id);
-            $data['status'] = $request->boolean('status');
             $data['social_links'] = $this->socialLinks($request);
+
+            if ($request->has('status')) {
+                $data['status'] = $request->boolean('status');
+            }
 
             if ($request->hasFile('avatar')) {
                 $data['avatar'] = FileService::compressAndReplace($request->file('avatar'), $this->uploadFolder, $author->getRawOriginal('avatar'));

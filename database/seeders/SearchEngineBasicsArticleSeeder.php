@@ -16,16 +16,42 @@ class SearchEngineBasicsArticleSeeder extends Seeder
     private const SERIES_SLUG = 'search-engine-basics';
 
     private array $articleSlugs = [
-        1 => 'what-is-information-retrieval',
-        2 => 'what-is-the-vector-space-model-how-documents-become-numbers-and-why-that-changes-everything',
-        3 => 'tf-idf-and-bm25-the-mathematics-of-keyword-relevance-and-why-repetition-stops-helping',
-        4 => 'pagerank-how-brin-and-page-replaced-word-counting-with-link-counting',
-        5 => 'hubs-and-authorities-how-kleinbergs-hits-algorithm-explains-why-niche-links-beat-generic-ones',
-        6 => 'crawl-index-rank-the-search-engine-pipeline-that-decides-whether-your-page-exists-to-google',
-        7 => 'from-strings-to-things-how-googles-knowledge-graph-and-hummingbird-update-changed-what-relevant-means',
-        8 => 'learning-to-rank-how-machine-learning-replaced-the-200-factor-checklist',
-        9 => 'map-mrr-and-ndcg-the-metrics-that-define-what-better-rankings-actually-mean',
-        10 => 'the-ethics-of-search-the-business-model-that-funds-it-and-what-seo-actually-is',
+        1  => 'what-is-information-retrieval',
+        2  => 'vector-space-model',
+        3  => 'tf-idf-bm25-explained',
+        4  => 'pagerank-algorithm-explained',
+        5  => 'hits-algorithm-explained',
+        6  => 'crawl-index-rank-pipeline',
+        7  => 'knowledge-graph-hummingbird',
+        8  => 'learning-to-rank',
+        9  => 'map-mrr-ndcg-explained',
+        10 => 'seo-ethics-explained',
+    ];
+
+    private array $articleMetaTitles = [
+        1  => 'What is information retrieval? (2026 guide)',
+        2  => 'What is the vector space model? (2026 guide)',
+        3  => 'TF-IDF and BM25: keyword relevance formulas explained',
+        4  => 'What is PageRank? How links replaced word-counting (2026)',
+        5  => 'Hubs and authorities: HITS algorithm explained (2026)',
+        6  => 'Crawl, index, rank: the search engine pipeline explained',
+        7  => 'Google Knowledge Graph and Hummingbird: entities explained',
+        8  => 'Learning to rank: how ML replaced manual ranking formulas',
+        9  => 'MAP, MRR, and NDCG: search ranking metrics explained (2026)',
+        10 => 'What is SEO? The ethics of search and its business model',
+    ];
+
+    private array $articleMetaDescriptions = [
+        1  => 'Information retrieval is the science of finding relevant documents. Learn precision, recall, relevance, and why these concepts explain how search engines work.',
+        2  => 'The vector space model turns documents into vectors. Learn cosine similarity, TF weighting, and why this 1975 idea still powers BERT and modern search.',
+        3  => 'TF-IDF scores term specificity; BM25 adds frequency saturation and length bias correction. Learn both formulas and exactly why keyword stuffing fails.',
+        4  => 'PageRank converts links into weighted votes using the random surfer model. Learn the formula, damping factor, and what the 2024 Google leak confirmed.',
+        5  => "HITS assigns hub and authority scores to every page. Learn Kleinberg's formula, the TKC effect, and what this means for topical link building strategy.",
+        6  => "The crawl-index-rank pipeline is Google's three-stage system. Learn URL discovery, crawl budget, the inverted index, canonicalization, and the serving layer.",
+        7  => 'The Knowledge Graph (2012) and Hummingbird moved Google from keywords to entities. Learn entity salience, disambiguation, and what topical authority means.',
+        8  => 'Learning-to-rank uses ML to weigh hundreds of signals at once. Learn why hand-crafted formulas failed, the three LTR frameworks, and what it means for SEO.',
+        9  => 'MAP, MRR, and NDCG each model how users scan search results. Learn the formulas, worked examples, and what these metrics mean for your SEO strategy.',
+        10 => 'Brin and Page warned in 1998 that ad-funded search would bias results. Learn the organic-paid wall, the rater guidelines, and what SEO actually means.',
     ];
 
     private array $presetColors = [
@@ -206,19 +232,29 @@ class SearchEngineBasicsArticleSeeder extends Seeder
                 'show_in_mobile_nav' => true,
                 'header_nav_order' => 1,
                 'mobile_nav_order' => 1,
-                'meta_title' => 'Search Engine Basics Series',
-                'meta_description' => 'Read the foundational Search Engine Basics series in order.',
+                'meta_title' => 'Search engine basics: foundations of how search works',
+                'meta_description' => 'The Search Engine Basics series covers information retrieval, PageRank, the Knowledge Graph, and learning-to-rank. Start here for structured SEO foundations.',
             ]
         );
 
         $dirty = false;
+
+        // Always enforce correct meta
+        foreach ([
+            'meta_title' => 'Search engine basics: foundations of how search works',
+            'meta_description' => 'The Search Engine Basics series covers information retrieval, PageRank, the Knowledge Graph, and learning-to-rank. Start here for structured SEO foundations.',
+        ] as $key => $value) {
+            if ($category->{$key} !== $value) {
+                $category->{$key} = $value;
+                $dirty = true;
+            }
+        }
+
         foreach ([
             'series_title' => 'Basics',
             'accent_color' => '#B8FF35',
             'description' => 'The big picture. Understand the three-stage process every search engine uses before writing a single line of SEO.',
             'series_description' => 'The big picture. Understand the three-stage process every search engine uses before writing a single line of SEO.',
-            'meta_title' => 'Search Engine Basics Series',
-            'meta_description' => 'Read the foundational Search Engine Basics series in order.',
         ] as $key => $value) {
             if (blank($category->{$key})) {
                 $category->{$key} = $value;
@@ -434,8 +470,8 @@ class SearchEngineBasicsArticleSeeder extends Seeder
             'excerpt' => $excerpt,
             'attributes' => $attributes,
             'faqs' => $this->parseFaqs($faqLines),
-            'meta_title' => Str::limit($title.' | Search Engine Basics', 512, ''),
-            'meta_description' => $metaDescription ?: $excerpt,
+            'meta_title' => $this->articleMetaTitles[$articleNumber] ?? Str::limit($title.' | Search Engine Basics', 60, ''),
+            'meta_description' => $this->articleMetaDescriptions[$articleNumber] ?? $metaDescription ?: $excerpt,
         ];
     }
 
@@ -799,9 +835,18 @@ class SearchEngineBasicsArticleSeeder extends Seeder
             }
 
             $href = '#source-article-'.$articleNumber.'-'.$number;
+            $externalUrl = $source['url'] ?? '';
+            $hasExternalUrl = $externalUrl && ! str_starts_with($externalUrl, '#');
+
             $refs .= '<a class="citation-ref" href="'.$this->escapeAttribute($href).'">';
             $refs .= '<sup>['.$number.']</sup>';
-            $refs .= '<span class="citation-popover"><span class="citation-popover-title">Source '.$number.'</span>'.$this->escape($source['citation']).'</span>';
+            $refs .= '<span class="citation-popover">';
+            $refs .= '<span class="citation-popover-title">Source '.$number.'</span>';
+            $refs .= $this->escape($source['citation']);
+            if ($hasExternalUrl) {
+                $refs .= '<span class="citation-popover-link" data-href="'.$this->escapeAttribute($externalUrl).'">View source ↗</span>';
+            }
+            $refs .= '</span>';
             $refs .= '</a>';
         }
 
