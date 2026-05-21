@@ -610,6 +610,11 @@
                                             type: 'textarea',
                                             name: 'preview',
                                             label: 'Hover preview text (optional)'
+                                        },
+                                        {
+                                            type: 'input',
+                                            name: 'url',
+                                            label: 'Source URL (shows "View source ↗" link in popover)'
                                         }
                                     ]
                                 },
@@ -627,7 +632,9 @@
 
                                     const target = String(data.target || defaultSourceTarget(sourceNumber)).replace(/^#/, '').trim();
                                     const preview = String(data.preview || 'Source ' + sourceNumber).trim();
-                                    const citation = '<span class="citation-cluster"><a class="citation-ref" href="#' + escapeHtml(target) + '"><sup>[' + escapeHtml(sourceNumber) + ']</sup><span class="citation-popover"><span class="citation-popover-title">Source ' + escapeHtml(sourceNumber) + '</span>' + escapeHtml(preview) + '</span></a></span>';
+                                    const url = String(data.url || '').trim();
+                                    const popoverLink = url ? '<span class="citation-popover-link" data-href="' + escapeHtml(url) + '">View source ↗</span>' : '';
+                                    const citation = '<span class="citation-cluster"><a class="citation-ref" href="#' + escapeHtml(target) + '"><sup>[' + escapeHtml(sourceNumber) + ']</sup><span class="citation-popover"><span class="citation-popover-title">Source ' + escapeHtml(sourceNumber) + '</span>' + escapeHtml(preview) + popoverLink + '</span></a></span>';
 
                                     editor.insertContent(citation);
                                     editor.save();
@@ -661,13 +668,19 @@
                                             type: 'textarea',
                                             name: 'citation',
                                             label: 'Source text'
+                                        },
+                                        {
+                                            type: 'input',
+                                            name: 'url',
+                                            label: 'Source URL (optional — shown as clickable link)'
                                         }
                                     ]
                                 },
                                 initialData: {
                                     heading: sourceSection()?.querySelector('h2')?.textContent?.trim() || 'Sources',
                                     number: '',
-                                    citation: ''
+                                    citation: '',
+                                    url: ''
                                 },
                                 buttons: [
                                     { type: 'cancel', text: 'Cancel' },
@@ -691,7 +704,10 @@
                                         ol.appendChild(item);
                                     }
 
-                                    item.innerHTML = '<p>' + escapeHtml(data.citation || 'Source ' + sourceNumber) + '</p>';
+                                    const url = String(data.url || '').trim();
+                                    const citationText = escapeHtml(data.citation || 'Source ' + sourceNumber);
+                                    const linkHtml = url ? ' <a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">[link]</a>' : '';
+                                    item.innerHTML = '<p>' + citationText + linkHtml + '</p>';
                                     editor.selection.select(item);
                                     editor.save();
                                     api.close();

@@ -43,6 +43,11 @@ class RouteServiceProvider extends ServiceProvider {
      */
     protected function configureRateLimiting() {
         RateLimiter::for('api', static function (Request $request) {
+            // Public frontend routes get a higher limit to support server-side rendering
+            if (str_starts_with($request->path(), 'api/site/')) {
+                return Limit::perMinute(300)->by($request->ip());
+            }
+
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
     }

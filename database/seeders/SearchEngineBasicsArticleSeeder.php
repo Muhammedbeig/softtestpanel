@@ -380,6 +380,7 @@ class SearchEngineBasicsArticleSeeder extends Seeder
         $html = preg_replace('/<span\s+class="citation-cluster"[\s\S]*?<\/span>\s*<\/a>\s*<\/span>/i', '', $html) ?? $html;
         $html = preg_replace('/<span\s+class="citation-cluster"[\s\S]*?<\/span>/i', '', $html) ?? $html;
         $html = preg_replace('/<a\s+href="\/'.preg_quote(self::SERIES_SLUG, '/').'\/[^"]+">([\s\S]*?)<\/a>/i', '$1', $html) ?? $html;
+        $html = preg_replace('/<a\s+href="(?:\.\.\/)+'.preg_quote(self::SERIES_SLUG, '/').'\/[^"]+">([\s\S]*?)<\/a>/i', '$1', $html) ?? $html;
         $html = preg_replace('/(<span[^>]*font-style:\s*italic[^>]*>)Sources:\s*[\s\S]*?(<\/span>)/i', '$1$2', $html) ?? $html;
         $html = preg_replace('/(?<!<strong>)(Your next step:)(?!<\/strong>)/u', '<strong>$1</strong>', $html) ?? $html;
         $html = preg_replace('/(?<!<strong>)(Coming up next:)(?!<\/strong>)/u', '<strong>$1</strong>', $html) ?? $html;
