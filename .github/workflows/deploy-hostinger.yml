@@ -41,18 +41,18 @@ jobs:
           fi
 
           mkdir -p "$HOME/.ssh"
-          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> "$HOME/.ssh/known_hosts"
+          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
 
           if [ -n "${SSH_PRIVATE_KEY}" ]; then
             printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/hostinger_key"
             chmod 600 "$HOME/.ssh/hostinger_key"
-            SSH=(ssh -i "$HOME/.ssh/hostinger_key" -p "$SSH_PORT")
-            SCP=(scp -i "$HOME/.ssh/hostinger_key" -P "$SSH_PORT")
+            SSH=(ssh -o StrictHostKeyChecking=no -i "$HOME/.ssh/hostinger_key" -p "$SSH_PORT")
+            SCP=(scp -o StrictHostKeyChecking=no -i "$HOME/.ssh/hostinger_key" -P "$SSH_PORT")
           else
             sudo apt-get update
             sudo apt-get install -y sshpass
-            SSH=(sshpass -e ssh -p "$SSH_PORT")
-            SCP=(sshpass -e scp -P "$SSH_PORT")
+            SSH=(sshpass -e ssh -o StrictHostKeyChecking=no -p "$SSH_PORT")
+            SCP=(sshpass -e scp -o StrictHostKeyChecking=no -P "$SSH_PORT")
             export SSHPASS="$SSH_PASSWORD"
           fi
 
