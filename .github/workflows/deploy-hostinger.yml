@@ -1,0 +1,79 @@
+name: Deploy Panel To Hostinger
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: hostinger-panel-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy over SSH
+        env:
+          SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+          SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT }}
+          SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_PRIVATE_KEY }}
+          SSH_PASSWORD: ${{ secrets.HOSTINGER_SSH_PASSWORD }}
+          PANEL_APP_DIR: ${{ secrets.PANEL_APP_DIR }}
+          PANEL_LIVE_PUBLIC_LINK: ${{ secrets.PANEL_LIVE_PUBLIC_LINK }}
+          PANEL_LIVE_TARGET: ${{ secrets.PANEL_LIVE_TARGET }}
+          PANEL_PHP_BIN: ${{ secrets.PANEL_PHP_BIN }}
+          PANEL_COMPOSER_BIN: ${{ secrets.PANEL_COMPOSER_BIN }}
+          PANEL_HEALTH_URL: ${{ secrets.PANEL_HEALTH_URL }}
+        run: |
+          set -euo pipefail
+
+          SSH_PORT="${SSH_PORT:-65002}"
+
+          if [ -z "${SSH_HOST}" ] || [ -z "${SSH_USER}" ] || { [ -z "${SSH_PRIVATE_KEY}" ] && [ -z "${SSH_PASSWORD}" ]; }; then
+            echo "::notice::Hostinger SSH secrets are not configured; skipping deployment."
+            exit 0
+          fi
+
+          mkdir -p "$HOME/.ssh"
+          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> "$HOME/.ssh/known_hosts"
+
+          if [ -n "${SSH_PRIVATE_KEY}" ]; then
+            printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/hostinger_key"
+            chmod 600 "$HOME/.ssh/hostinger_key"
+            SSH=(ssh -i "$HOME/.ssh/hostinger_key" -p "$SSH_PORT")
+            SCP=(scp -i "$HOME/.ssh/hostinger_key" -P "$SSH_PORT")
+          else
+            sudo apt-get update
+            sudo apt-get install -y sshpass
+            SSH=(sshpass -e ssh -p "$SSH_PORT")
+            SCP=(sshpass -e scp -P "$SSH_PORT")
+            export SSHPASS="$SSH_PASSWORD"
+          fi
+
+          remote_script="/tmp/seb-panel-deploy-${GITHUB_RUN_ID}.sh"
+          "${SCP[@]}" deploy/hostinger-panel.sh "$SSH_USER@$SSH_HOST:$remote_script"
+
+          remote_env=(
+            "APP_NAME=seb.panel"
+            "REPO_URL=https://github.com/Muhammedbeig/seb.panel.git"
+            "BRANCH=main"
+            "GITHUB_SHA=$GITHUB_SHA"
+          )
+
+          [ -n "${PANEL_APP_DIR}" ] && remote_env+=("APP_DIR=$PANEL_APP_DIR")
+          [ -n "${PANEL_LIVE_PUBLIC_LINK}" ] && remote_env+=("LIVE_PUBLIC_LINK=$PANEL_LIVE_PUBLIC_LINK")
+          [ -n "${PANEL_LIVE_TARGET}" ] && remote_env+=("LIVE_TARGET=$PANEL_LIVE_TARGET")
+          [ -n "${PANEL_PHP_BIN}" ] && remote_env+=("PHP_BIN=$PANEL_PHP_BIN")
+          [ -n "${PANEL_COMPOSER_BIN}" ] && remote_env+=("COMPOSER_BIN=$PANEL_COMPOSER_BIN")
+          [ -n "${PANEL_HEALTH_URL}" ] && remote_env+=("HEALTH_URL=$PANEL_HEALTH_URL")
+
+          printf -v remote_prefix '%q ' "${remote_env[@]}"
+
+          "${SSH[@]}" "$SSH_USER@$SSH_HOST" \
+            "chmod +x '$remote_script' && ${remote_prefix}bash '$remote_script'; status=\$?; rm -f '$remote_script'; exit \$status"
