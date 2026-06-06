@@ -20,6 +20,8 @@ Optional:
 - `PANEL_APP_DIR`: defaults to `~/apps/seb.panel`
 - `PANEL_LIVE_PUBLIC_LINK`: symlink path used as the Laravel live app root
 - `PANEL_LIVE_TARGET`: defaults to `root`; use `public` only when the domain document root points directly at Laravel `public`
+- `PANEL_ACTIVATE_LIVE`: set to `1` only when this deployment should switch `PANEL_LIVE_PUBLIC_LINK`
+- `PANEL_RUN_MIGRATIONS`: set to `1` only when this deployment should run `php artisan migrate --force`
 - `PANEL_PHP_BIN`: defaults to `php`
 - `PANEL_COMPOSER_BIN`: defaults to `composer`
 - `PANEL_HEALTH_URL`: example `https://panel.searchenginebasics.io`
@@ -38,7 +40,7 @@ Put the production env file here:
 ~/apps/seb.panel/shared/.env
 ```
 
-The deploy script creates a new release under `~/apps/seb.panel/releases`, links `.env` and shared `storage`, installs Composer dependencies, runs migrations and Laravel caches, then switches `current` only after the release is ready.
+The deploy script creates a new release under `~/apps/seb.panel/releases`, links `.env` and shared `storage`, installs Composer dependencies, checks migration status, builds Laravel caches, then switches `current` only after the release is ready. It runs real migrations only when `PANEL_RUN_MIGRATIONS=1`.
 
 The current Hostinger panel files are under:
 
@@ -57,6 +59,7 @@ Then set:
 ```txt
 PANEL_LIVE_PUBLIC_LINK=/home/u680035976/domains/searchenginebasics.io/public_html/panel
 PANEL_LIVE_TARGET=root
+PANEL_ACTIVATE_LIVE=1
 ```
 
 The deploy script refuses to overwrite a real non-symlink directory.

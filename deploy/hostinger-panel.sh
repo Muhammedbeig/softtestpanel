@@ -10,6 +10,7 @@ LIVE_TARGET="${LIVE_TARGET:-root}"
 PHP_BIN="${PHP_BIN:-php}"
 COMPOSER_BIN="${COMPOSER_BIN:-composer}"
 KEEP_RELEASES="${KEEP_RELEASES:-5}"
+RUN_MIGRATIONS="${RUN_MIGRATIONS:-0}"
 
 RELEASES_DIR="$APP_DIR/releases"
 SHARED_DIR="$APP_DIR/shared"
@@ -126,7 +127,13 @@ ln -sfn "$SHARED_DIR/storage" storage
 mkdir -p bootstrap/cache
 
 "$COMPOSER_BIN" install --no-dev --prefer-dist --optimize-autoloader --no-interaction
-"$PHP_BIN" artisan migrate --force
+
+if [ "$RUN_MIGRATIONS" = "1" ]; then
+  "$PHP_BIN" artisan migrate --force
+else
+  "$PHP_BIN" artisan migrate:status >/dev/null
+fi
+
 "$PHP_BIN" artisan storage:link || true
 "$PHP_BIN" artisan config:cache
 "$PHP_BIN" artisan route:cache

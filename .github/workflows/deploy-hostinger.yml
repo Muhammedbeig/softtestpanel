@@ -27,6 +27,8 @@ jobs:
           PANEL_APP_DIR: ${{ secrets.PANEL_APP_DIR }}
           PANEL_LIVE_PUBLIC_LINK: ${{ secrets.PANEL_LIVE_PUBLIC_LINK }}
           PANEL_LIVE_TARGET: ${{ secrets.PANEL_LIVE_TARGET }}
+          PANEL_ACTIVATE_LIVE: ${{ secrets.PANEL_ACTIVATE_LIVE }}
+          PANEL_RUN_MIGRATIONS: ${{ secrets.PANEL_RUN_MIGRATIONS }}
           PANEL_PHP_BIN: ${{ secrets.PANEL_PHP_BIN }}
           PANEL_COMPOSER_BIN: ${{ secrets.PANEL_COMPOSER_BIN }}
           PANEL_HEALTH_URL: ${{ secrets.PANEL_HEALTH_URL }}
@@ -67,11 +69,14 @@ jobs:
           )
 
           [ -n "${PANEL_APP_DIR}" ] && remote_env+=("APP_DIR=$PANEL_APP_DIR")
-          [ -n "${PANEL_LIVE_PUBLIC_LINK}" ] && remote_env+=("LIVE_PUBLIC_LINK=$PANEL_LIVE_PUBLIC_LINK")
+          if [ "${PANEL_ACTIVATE_LIVE}" = "1" ]; then
+            [ -n "${PANEL_LIVE_PUBLIC_LINK}" ] && remote_env+=("LIVE_PUBLIC_LINK=$PANEL_LIVE_PUBLIC_LINK")
+            [ -n "${PANEL_HEALTH_URL}" ] && remote_env+=("HEALTH_URL=$PANEL_HEALTH_URL")
+          fi
           [ -n "${PANEL_LIVE_TARGET}" ] && remote_env+=("LIVE_TARGET=$PANEL_LIVE_TARGET")
+          [ -n "${PANEL_RUN_MIGRATIONS}" ] && remote_env+=("RUN_MIGRATIONS=$PANEL_RUN_MIGRATIONS")
           [ -n "${PANEL_PHP_BIN}" ] && remote_env+=("PHP_BIN=$PANEL_PHP_BIN")
           [ -n "${PANEL_COMPOSER_BIN}" ] && remote_env+=("COMPOSER_BIN=$PANEL_COMPOSER_BIN")
-          [ -n "${PANEL_HEALTH_URL}" ] && remote_env+=("HEALTH_URL=$PANEL_HEALTH_URL")
 
           printf -v remote_prefix '%q ' "${remote_env[@]}"
 
