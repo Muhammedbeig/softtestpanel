@@ -17,6 +17,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Build release artifact
+        run: |
+          set -euo pipefail
+          git archive --format=tar.gz --output=seb-panel-release.tgz HEAD
+
       - name: Deploy over SSH
         env:
           SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
@@ -59,13 +64,16 @@ jobs:
           fi
 
           remote_script="/tmp/seb-panel-deploy-${GITHUB_RUN_ID}.sh"
+          remote_artifact="/tmp/seb-panel-release-${GITHUB_RUN_ID}.tgz"
           "${SCP[@]}" deploy/hostinger-panel.sh "$SSH_USER@$SSH_HOST:$remote_script"
+          "${SCP[@]}" seb-panel-release.tgz "$SSH_USER@$SSH_HOST:$remote_artifact"
 
           remote_env=(
             "APP_NAME=seb.panel"
             "REPO_URL=https://github.com/Muhammedbeig/seb.panel.git"
             "BRANCH=main"
             "GITHUB_SHA=$GITHUB_SHA"
+            "ARTIFACT_PATH=$remote_artifact"
           )
 
           [ -n "${PANEL_APP_DIR}" ] && remote_env+=("APP_DIR=$PANEL_APP_DIR")
@@ -81,4 +89,4 @@ jobs:
           printf -v remote_prefix '%q ' "${remote_env[@]}"
 
           "${SSH[@]}" "$SSH_USER@$SSH_HOST" \
-            "chmod +x '$remote_script' && ${remote_prefix}bash '$remote_script'; status=\$?; rm -f '$remote_script'; exit \$status"
+            "chmod +x '$remote_script' && ${remote_prefix}bash '$remote_script'; status=\$?; rm -f '$remote_script' '$remote_artifact'; exit \$status"

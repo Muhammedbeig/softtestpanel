@@ -4,6 +4,8 @@ This repo deploys to Hostinger through `.github/workflows/deploy-hostinger.yml`.
 
 The workflow runs on `main` pushes and manual `workflow_dispatch`. If SSH secrets are not configured, it exits successfully without deploying.
 
+GitHub Actions packages the checked-out panel source and uploads that release artifact. Hostinger extracts the artifact, so the server does not need GitHub credentials to clone the private repo.
+
 ## GitHub Secrets
 
 Required:

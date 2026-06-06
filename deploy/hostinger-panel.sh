@@ -11,6 +11,7 @@ PHP_BIN="${PHP_BIN:-php}"
 COMPOSER_BIN="${COMPOSER_BIN:-composer}"
 KEEP_RELEASES="${KEEP_RELEASES:-5}"
 RUN_MIGRATIONS="${RUN_MIGRATIONS:-0}"
+ARTIFACT_PATH="${ARTIFACT_PATH:-}"
 
 RELEASES_DIR="$APP_DIR/releases"
 SHARED_DIR="$APP_DIR/shared"
@@ -96,9 +97,15 @@ cleanup_failed_release() {
 
 trap cleanup_failed_release ERR
 
-require_command git
 require_command "$PHP_BIN"
 require_command "$COMPOSER_BIN"
+
+if [ -n "$ARTIFACT_PATH" ]; then
+  require_command tar
+else
+  require_command git
+fi
+
 validate_live_public_link
 
 mkdir -p "$RELEASES_DIR" "$SHARED_DIR" "$SHARED_DIR/storage"
@@ -116,8 +123,19 @@ if [ -n "$LIVE_PUBLIC_LINK" ] && [ -L "$LIVE_PUBLIC_LINK" ]; then
   PREVIOUS_PUBLIC_RELEASE="$(readlink "$LIVE_PUBLIC_LINK" || true)"
 fi
 
-log "Deploying $APP_NAME from $REPO_URL#$BRANCH into $RELEASE_DIR"
-git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$RELEASE_DIR"
+if [ -n "$ARTIFACT_PATH" ]; then
+  if [ ! -f "$ARTIFACT_PATH" ]; then
+    printf 'Missing panel artifact: %s\n' "$ARTIFACT_PATH" >&2
+    exit 1
+  fi
+
+  log "Deploying $APP_NAME artifact into $RELEASE_DIR"
+  mkdir -p "$RELEASE_DIR"
+  tar -xzf "$ARTIFACT_PATH" -C "$RELEASE_DIR"
+else
+  log "Deploying $APP_NAME from $REPO_URL#$BRANCH into $RELEASE_DIR"
+  git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$RELEASE_DIR"
+fi
 
 cd "$RELEASE_DIR"
 
