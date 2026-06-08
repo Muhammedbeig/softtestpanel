@@ -3,6 +3,10 @@
         Options -MultiViews -Indexes
     </IfModule>
 
+    <IfModule mod_mime.c>
+        AddType image/avif .avif
+    </IfModule>
+
     RewriteEngine On
     
     #ErrorDocument 200 "Hello. This is your .htaccess file talking."
