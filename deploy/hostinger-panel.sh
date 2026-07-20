@@ -152,7 +152,8 @@ rm -rf storage
 ln -sfn "$SHARED_DIR/storage" storage
 mkdir -p bootstrap/cache
 
-"$COMPOSER_BIN" install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+"$COMPOSER_BIN" install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-scripts
+"$PHP_BIN" artisan package:discover --ansi
 
 if [ "$RUN_MIGRATIONS" = "1" ]; then
   "$PHP_BIN" artisan migrate --force
