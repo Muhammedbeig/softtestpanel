@@ -12,6 +12,7 @@ COMPOSER_BIN="${COMPOSER_BIN:-composer}"
 KEEP_RELEASES="${KEEP_RELEASES:-5}"
 RUN_MIGRATIONS="${RUN_MIGRATIONS:-0}"
 RUN_SEEDERS="${RUN_SEEDERS:-0}"
+SYNC_SOFTWARE_TESTING_ARTICLES="${SYNC_SOFTWARE_TESTING_ARTICLES:-0}"
 ARTIFACT_PATH="${ARTIFACT_PATH:-}"
 
 RELEASES_DIR="$APP_DIR/releases"
@@ -165,6 +166,12 @@ fi
 
 if [ "$RUN_SEEDERS" = "1" ]; then
   "$PHP_BIN" artisan db:seed --force
+fi
+
+if [ "$SYNC_SOFTWARE_TESTING_ARTICLES" = "1" ]; then
+  "$PHP_BIN" artisan content:sync-software-testing-articles --force
+else
+  log "Skipping Software Testing Basics article sync"
 fi
 
 if [ -e public/storage ] && [ ! -L public/storage ]; then

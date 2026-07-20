@@ -63,7 +63,7 @@ class PublicContentController extends Controller
     public function blogs(Request $request)
     {
         return $this->cachedJson($request->fullUrl(), function () use ($request) {
-            $query = Blog::with(['seriesCategory:id,name,slug,series_title,accent_color', 'author:id,name,slug,role,bio,avatar,status', 'updatedByAuthor:id,name,slug,role,bio,avatar,status', 'additionalAuthors', 'reviewers', 'editors', 'shareLinks'])
+            $query = Blog::with(['seriesCategory:id,name,slug,series_title,accent_color', 'author:id,name,slug,role,bio,avatar,website_url,status', 'updatedByAuthor:id,name,slug,role,bio,avatar,website_url,status', 'additionalAuthors', 'reviewers', 'editors', 'shareLinks'])
                 ->where('status', 'published')
                 ->when($request->boolean('featured'), fn ($q) => $q->where('is_featured', true))
                 ->when($request->filled('category'), function ($q) use ($request) {
@@ -109,7 +109,7 @@ class PublicContentController extends Controller
     public function blog(string $slug)
     {
         return $this->cachedJson('blog:'.$slug, function () use ($slug) {
-            $blog = Blog::with(['seriesCategory', 'author:id,name,slug,role,bio,avatar,status', 'updatedByAuthor:id,name,slug,role,bio,avatar,status', 'additionalAuthors', 'reviewers', 'editors', 'faqs', 'shareLinks'])
+            $blog = Blog::with(['seriesCategory', 'author:id,name,slug,role,bio,avatar,website_url,status', 'updatedByAuthor:id,name,slug,role,bio,avatar,website_url,status', 'additionalAuthors', 'reviewers', 'editors', 'faqs', 'shareLinks'])
                 ->where('slug', $slug)
                 ->where('status', 'published')
                 ->firstOrFail();

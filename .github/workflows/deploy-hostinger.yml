@@ -5,6 +5,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      sync_software_testing_articles:
+        description: Refresh the two cited Software Testing Basics articles in the production database
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: hostinger-panel-production
@@ -38,6 +44,7 @@ jobs:
           PANEL_PHP_BIN: ${{ secrets.PANEL_PHP_BIN }}
           PANEL_COMPOSER_BIN: ${{ secrets.PANEL_COMPOSER_BIN }}
           PANEL_HEALTH_URL: ${{ secrets.PANEL_HEALTH_URL }}
+          SYNC_SOFTWARE_TESTING_ARTICLES: ${{ inputs.sync_software_testing_articles && '1' || '0' }}
         run: |
           set -euo pipefail
 
@@ -87,6 +94,7 @@ jobs:
           [ -n "${PANEL_RUN_SEEDERS}" ] && remote_env+=("RUN_SEEDERS=$PANEL_RUN_SEEDERS")
           [ -n "${PANEL_PHP_BIN}" ] && remote_env+=("PHP_BIN=$PANEL_PHP_BIN")
           [ -n "${PANEL_COMPOSER_BIN}" ] && remote_env+=("COMPOSER_BIN=$PANEL_COMPOSER_BIN")
+          [ -n "${SYNC_SOFTWARE_TESTING_ARTICLES}" ] && remote_env+=("SYNC_SOFTWARE_TESTING_ARTICLES=$SYNC_SOFTWARE_TESTING_ARTICLES")
 
           printf -v remote_prefix '%q ' "${remote_env[@]}"
 
