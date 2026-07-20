@@ -123,6 +123,8 @@ if [ ! -f "$SHARED_DIR/.env" ]; then
   exit 1
 fi
 
+touch "$SHARED_DIR/storage/installed"
+
 if [ -L "$CURRENT_LINK" ]; then
   PREVIOUS_RELEASE="$(readlink "$CURRENT_LINK" || true)"
 fi
