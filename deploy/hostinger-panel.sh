@@ -165,7 +165,11 @@ if [ "$RUN_SEEDERS" = "1" ]; then
   "$PHP_BIN" artisan db:seed --force
 fi
 
-"$PHP_BIN" artisan storage:link || true
+if [ -e public/storage ] && [ ! -L public/storage ]; then
+  log "public/storage exists and is not a symlink; leaving it unchanged"
+else
+  ln -sfn "$SHARED_DIR/storage/app/public" public/storage
+fi
 "$PHP_BIN" artisan config:cache
 "$PHP_BIN" artisan route:cache
 "$PHP_BIN" artisan view:cache
