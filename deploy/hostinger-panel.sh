@@ -109,7 +109,14 @@ fi
 
 validate_live_public_link
 
-mkdir -p "$RELEASES_DIR" "$SHARED_DIR" "$SHARED_DIR/storage"
+mkdir -p \
+  "$RELEASES_DIR" \
+  "$SHARED_DIR" \
+  "$SHARED_DIR/storage/app/public" \
+  "$SHARED_DIR/storage/framework/cache/data" \
+  "$SHARED_DIR/storage/framework/sessions" \
+  "$SHARED_DIR/storage/framework/views" \
+  "$SHARED_DIR/storage/logs"
 
 if [ ! -f "$SHARED_DIR/.env" ]; then
   printf 'Missing shared Laravel env file: %s/.env\n' "$SHARED_DIR" >&2
