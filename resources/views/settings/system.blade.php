@@ -32,25 +32,25 @@
                             <div class="form-group mandatory">
                                 <label for="company_name" class="form-label">{{ __('Brand Name') }}</label>
                                 <input id="company_name" name="company_name" type="text" class="form-control"
-                                       value="{{ $settings['company_name'] ?? 'Search Engine Basics' }}" required>
+                                       value="{{ $settings['company_name'] ?? 'Software Testing Basics' }}" required>
                             </div>
 
                             <div class="form-group mandatory">
                                 <label for="website_url" class="form-label">{{ __('Website URL') }}</label>
                                 <input id="website_url" name="website_url" type="url" class="form-control"
-                                       value="{{ $settings['website_url'] ?? 'https://searchenginebasics.io' }}" required>
+                                       value="{{ $settings['website_url'] ?? 'https://softwaretestingbasics.io' }}" required>
                             </div>
 
                             <div class="form-group mandatory">
                                 <label for="company_email" class="form-label">{{ __('Contact Email') }}</label>
                                 <input id="company_email" name="company_email" type="email" class="form-control"
-                                       value="{{ $settings['company_email'] ?? 'hello@searchenginebasics.io' }}" required>
+                                       value="{{ $settings['company_email'] ?? 'hello@softwaretestingbasics.io' }}" required>
                             </div>
 
                             <div class="form-group">
                                 <label for="mail_from_address" class="form-label">{{ __('Mail From Address') }}</label>
                                 <input id="mail_from_address" name="mail_from_address" type="email" class="form-control"
-                                       value="{{ $settings['mail_from_address'] ?? 'hello@searchenginebasics.io' }}">
+                                       value="{{ $settings['mail_from_address'] ?? 'hello@softwaretestingbasics.io' }}">
                             </div>
 
                             <div class="form-group">
@@ -104,7 +104,7 @@
                                 <label for="deep_link_scheme" class="form-label">{{ __('Site Scheme') }}</label>
                                 <input id="deep_link_scheme" name="deep_link_scheme" type="text" class="form-control"
                                        pattern="^[a-z][a-z0-9]*$"
-                                       value="{{ $settings['deep_link_scheme'] ?? 'searchenginebasics' }}">
+                                       value="{{ $settings['deep_link_scheme'] ?? 'softwaretestingbasics' }}">
                             </div>
                         </div>
                     </div>

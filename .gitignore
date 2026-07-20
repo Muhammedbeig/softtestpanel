@@ -24,6 +24,7 @@ public_html/hot
 
 storage/*.key
 .env
+/database/*.sqlite
 Homestead.yaml
 Homestead.json
 /.vagrant

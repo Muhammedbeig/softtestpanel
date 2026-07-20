@@ -34,7 +34,7 @@
             <div class="col-md-2">
                 <div class="form-group">
                     <label>{{ __('Accent Color') }}</label>
-                    <input type="color" name="accent_color" class="form-control form-control-color" value="{{ old('accent_color', $category_data?->accent_color ?? '#B8FF35') }}">
+                    <input type="color" name="accent_color" class="form-control form-control-color" value="{{ old('accent_color', $category_data?->accent_color ?? config('services.site.accent_color')) }}">
                 </div>
             </div>
             <div class="col-md-3">

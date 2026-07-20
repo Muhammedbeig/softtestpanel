@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-APP_NAME="${APP_NAME:-seb.panel}"
-REPO_URL="${REPO_URL:-https://github.com/Muhammedbeig/seb.panel.git}"
+APP_NAME="${APP_NAME:-softtestpanel}"
+REPO_URL="${REPO_URL:-https://github.com/Muhammedbeig/softtestpanel.git}"
 BRANCH="${BRANCH:-main}"
-APP_DIR="${APP_DIR:-$HOME/apps/seb.panel}"
+APP_DIR="${APP_DIR:-$HOME/apps/softtestpanel}"
 LIVE_PUBLIC_LINK="${LIVE_PUBLIC_LINK:-}"
 LIVE_TARGET="${LIVE_TARGET:-root}"
 PHP_BIN="${PHP_BIN:-php}"
 COMPOSER_BIN="${COMPOSER_BIN:-composer}"
 KEEP_RELEASES="${KEEP_RELEASES:-5}"
 RUN_MIGRATIONS="${RUN_MIGRATIONS:-0}"
+RUN_SEEDERS="${RUN_SEEDERS:-0}"
 ARTIFACT_PATH="${ARTIFACT_PATH:-}"
 
 RELEASES_DIR="$APP_DIR/releases"
@@ -149,7 +150,11 @@ mkdir -p bootstrap/cache
 if [ "$RUN_MIGRATIONS" = "1" ]; then
   "$PHP_BIN" artisan migrate --force
 else
-  "$PHP_BIN" artisan migrate:status >/dev/null
+  log "Skipping database migrations"
+fi
+
+if [ "$RUN_SEEDERS" = "1" ]; then
+  "$PHP_BIN" artisan db:seed --force
 fi
 
 "$PHP_BIN" artisan storage:link || true

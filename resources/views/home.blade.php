@@ -5,7 +5,7 @@
 
 @section('content')
     <section class="section">
-        <div class="dashboard_title mb-3">{{ __('Search Engine Basics CMS') }}</div>
+        <div class="dashboard_title mb-3">{{ __('Software Testing Basics CMS') }}</div>
 
         <div class="row">
             @foreach([

@@ -20,7 +20,7 @@ jobs:
       - name: Build release artifact
         run: |
           set -euo pipefail
-          git archive --format=tar.gz --output=seb-panel-release.tgz HEAD
+          git archive --format=tar.gz --output=softtestpanel-release.tgz HEAD
 
       - name: Deploy over SSH
         env:
@@ -34,6 +34,7 @@ jobs:
           PANEL_LIVE_TARGET: ${{ secrets.PANEL_LIVE_TARGET }}
           PANEL_ACTIVATE_LIVE: ${{ secrets.PANEL_ACTIVATE_LIVE }}
           PANEL_RUN_MIGRATIONS: ${{ secrets.PANEL_RUN_MIGRATIONS }}
+          PANEL_RUN_SEEDERS: ${{ secrets.PANEL_RUN_SEEDERS }}
           PANEL_PHP_BIN: ${{ secrets.PANEL_PHP_BIN }}
           PANEL_COMPOSER_BIN: ${{ secrets.PANEL_COMPOSER_BIN }}
           PANEL_HEALTH_URL: ${{ secrets.PANEL_HEALTH_URL }}
@@ -63,14 +64,14 @@ jobs:
             export SSHPASS="$SSH_PASSWORD"
           fi
 
-          remote_script="/tmp/seb-panel-deploy-${GITHUB_RUN_ID}.sh"
-          remote_artifact="/tmp/seb-panel-release-${GITHUB_RUN_ID}.tgz"
+          remote_script="/tmp/softtestpanel-deploy-${GITHUB_RUN_ID}.sh"
+          remote_artifact="/tmp/softtestpanel-release-${GITHUB_RUN_ID}.tgz"
           "${SCP[@]}" deploy/hostinger-panel.sh "$SSH_USER@$SSH_HOST:$remote_script"
-          "${SCP[@]}" seb-panel-release.tgz "$SSH_USER@$SSH_HOST:$remote_artifact"
+          "${SCP[@]}" softtestpanel-release.tgz "$SSH_USER@$SSH_HOST:$remote_artifact"
 
           remote_env=(
-            "APP_NAME=seb.panel"
-            "REPO_URL=https://github.com/Muhammedbeig/seb.panel.git"
+            "APP_NAME=softtestpanel"
+            "REPO_URL=https://github.com/Muhammedbeig/softtestpanel.git"
             "BRANCH=main"
             "GITHUB_SHA=$GITHUB_SHA"
             "ARTIFACT_PATH=$remote_artifact"
@@ -83,6 +84,7 @@ jobs:
           fi
           [ -n "${PANEL_LIVE_TARGET}" ] && remote_env+=("LIVE_TARGET=$PANEL_LIVE_TARGET")
           [ -n "${PANEL_RUN_MIGRATIONS}" ] && remote_env+=("RUN_MIGRATIONS=$PANEL_RUN_MIGRATIONS")
+          [ -n "${PANEL_RUN_SEEDERS}" ] && remote_env+=("RUN_SEEDERS=$PANEL_RUN_SEEDERS")
           [ -n "${PANEL_PHP_BIN}" ] && remote_env+=("PHP_BIN=$PANEL_PHP_BIN")
           [ -n "${PANEL_COMPOSER_BIN}" ] && remote_env+=("COMPOSER_BIN=$PANEL_COMPOSER_BIN")
 

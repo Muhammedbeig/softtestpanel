@@ -513,8 +513,6 @@ class SettingController extends Controller
 
         $candidates = array_filter(array_unique([
             env('FRONTEND_ENV_PATH'),
-            base_path('../searchenginebasics-academy/.env.local'),
-            'C:\\Users\\Muham\\searchenginebasics-academy\\.env.local',
         ]));
 
         foreach ($candidates as $path) {

@@ -143,7 +143,7 @@
             <div class="col-md-3">
                 <div class="form-group">
                     <label>{{ __('Accent Color') }}</label>
-                    <input type="text" name="accent_color" class="form-control" value="{{ old('accent_color', $blog?->accent_color ?? '#B8FF35') }}">
+                    <input type="text" name="accent_color" class="form-control" value="{{ old('accent_color', $blog?->accent_color ?? config('services.site.accent_color')) }}">
                 </div>
             </div>
             <div class="col-md-3">
@@ -235,7 +235,7 @@
                                 <input type="text" id="preset-attribute-label" class="form-control" placeholder="{{ __('Preset label') }}">
                             </div>
                             <div class="col-md-2">
-                                <input type="color" id="preset-attribute-color" class="form-control form-control-color" value="#B8FF35">
+                                <input type="color" id="preset-attribute-color" class="form-control form-control-color" value="#00F4C8">
                             </div>
                             <div class="col-md-2">
                                 <button type="button" class="btn btn-outline-primary w-100" id="add-preset-attribute">{{ __('Add Preset') }}</button>
@@ -247,7 +247,7 @@
                             <input type="text" id="custom-attribute-label" class="form-control" placeholder="{{ __('Custom attribute or paper name') }}">
                         </div>
                         <div class="col-md-2">
-                            <input type="color" id="custom-attribute-color" class="form-control form-control-color" value="#B8FF35">
+                            <input type="color" id="custom-attribute-color" class="form-control form-control-color" value="#00F4C8">
                         </div>
                         <div class="col-md-2">
                             <button type="button" class="btn btn-secondary w-100" id="add-custom-attribute">{{ __('Add') }}</button>
@@ -415,7 +415,7 @@
                 .custom-block { border: 1px solid #1E1E30; background: #0F0F1A; border-radius: 12px; padding: 1.5rem; margin: 2rem 0; position: relative; font-family: 'DM Sans', sans-serif; color: #E8E8F0; }
                 .custom-block p:last-child { margin-bottom: 0; }
                 .custom-block::before { display: flex; align-items: center; font-family: 'DM Mono', monospace; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; margin-bottom: 1rem; text-transform: uppercase; }
-                .block-key-takeaway { border-color: rgba(184, 255, 53, 0.3); } .block-key-takeaway::before { content: "• KEY TAKEAWAY"; color: #B8FF35; }
+                .block-key-takeaway { border-color: rgba(0, 244, 200, 0.3); } .block-key-takeaway::before { content: "• KEY TAKEAWAY"; color: #00F4C8; }
                 .block-quote { border: none; border-left: 3px solid #9B59B6; background: transparent; padding: 1rem 1.5rem; border-radius: 0; font-style: italic; font-size: 1.1rem; color: #E8E8F0; } .block-quote::before { content: "”"; font-family: 'Syne', sans-serif; font-size: 3rem; line-height: 0; color: #9B59B6; opacity: 0.3; position: absolute; top: 10px; left: -20px; }
                 .block-suggestion { border-color: rgba(0, 255, 204, 0.3); } .block-suggestion::before { content: "✦ SUGGESTION"; color: #00FFCC; }
                 .block-so-what { border-color: rgba(255, 159, 67, 0.3); } .block-so-what::before { content: "🤔 SO WHAT?"; color: #FF9F43; }
@@ -444,17 +444,17 @@
                 .block-code .code-property { color: #9CDCFE !important; }
                 .block-code .code-punctuation { color: #D4D4D4 !important; }
                 .citation-cluster { display: inline-flex; vertical-align: super; margin-left: .12rem; }
-                .citation-ref { color: #B8FF35 !important; text-decoration: none; font-family: 'DM Mono', monospace; font-size: .78em; }
-                .citation-ref sup { color: #B8FF35 !important; }
+                .citation-ref { color: #00F4C8 !important; text-decoration: none; font-family: 'DM Mono', monospace; font-size: .78em; }
+                .citation-ref sup { color: #00F4C8 !important; }
                 .citation-popover { display: none; }
                 .article-sources { border-top: 1px solid #1E1E30; margin-top: 2rem; padding-top: 1rem; }
                 .article-sources h2 { color: #E8E8F0; font-family: 'Syne', sans-serif; }
                 .article-sources li { margin: .45rem 0; padding-left: .15rem; }
-                button.tab { appearance: none !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; min-height: 2.35rem; max-width: 100%; margin: .25rem .35rem .25rem 0 !important; border: 1px solid rgba(184, 255, 53, .24) !important; border-radius: 999px !important; background: rgba(15, 15, 26, .92) !important; color: #B8B8CC !important; cursor: pointer !important; font-family: 'DM Mono', monospace !important; font-size: .72rem !important; font-weight: 700 !important; letter-spacing: .04em !important; line-height: 1.2 !important; padding: .62rem .95rem !important; text-align: center !important; text-transform: uppercase !important; transition: border-color 160ms ease, background 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease !important; white-space: normal !important; }
-                button.tab:hover, button.tab:focus-visible { border-color: rgba(184, 255, 53, .78) !important; background: rgba(184, 255, 53, .1) !important; color: #B8FF35 !important; box-shadow: 0 0 0 3px rgba(184, 255, 53, .08) !important; outline: none !important; transform: translateY(-1px); }
-                button.tab.active, button.tab[aria-selected="true"] { border-color: #B8FF35 !important; background: #B8FF35 !important; color: #07070F !important; box-shadow: 0 10px 30px rgba(184, 255, 53, .16) !important; }
-                .custom-html-block { border: 1px dashed rgba(184, 255, 53, 0.45); border-radius: 10px; background: rgba(184, 255, 53, 0.06); color: #B8FF35; padding: 1.1rem; margin: 1.5rem 0; font-family: 'DM Mono', monospace; }
-                .custom-html-block::before { content: "HTML BLOCK"; display: block; margin-bottom: .45rem; font-size: .72rem; font-weight: 700; letter-spacing: .08em; color: #B8FF35; }
+                button.tab { appearance: none !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; min-height: 2.35rem; max-width: 100%; margin: .25rem .35rem .25rem 0 !important; border: 1px solid rgba(0, 244, 200, .24) !important; border-radius: 999px !important; background: rgba(15, 15, 26, .92) !important; color: #B8B8CC !important; cursor: pointer !important; font-family: 'DM Mono', monospace !important; font-size: .72rem !important; font-weight: 700 !important; letter-spacing: .04em !important; line-height: 1.2 !important; padding: .62rem .95rem !important; text-align: center !important; text-transform: uppercase !important; transition: border-color 160ms ease, background 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease !important; white-space: normal !important; }
+                button.tab:hover, button.tab:focus-visible { border-color: rgba(0, 244, 200, .78) !important; background: rgba(0, 244, 200, .1) !important; color: #00F4C8 !important; box-shadow: 0 0 0 3px rgba(0, 244, 200, .08) !important; outline: none !important; transform: translateY(-1px); }
+                button.tab.active, button.tab[aria-selected="true"] { border-color: #00F4C8 !important; background: #00F4C8 !important; color: #07070F !important; box-shadow: 0 10px 30px rgba(0, 244, 200, .16) !important; }
+                .custom-html-block { border: 1px dashed rgba(0, 244, 200, 0.45); border-radius: 10px; background: rgba(0, 244, 200, 0.06); color: #00F4C8; padding: 1.1rem; margin: 1.5rem 0; font-family: 'DM Mono', monospace; }
+                .custom-html-block::before { content: "HTML BLOCK"; display: block; margin-bottom: .45rem; font-size: .72rem; font-weight: 700; letter-spacing: .08em; color: #00F4C8; }
             `;
 
             tinymce.init({
@@ -1159,7 +1159,7 @@
             }
 
             function cleanAttributeColor(color) {
-                return /^#[0-9a-fA-F]{6}$/.test(color || '') ? color : '#B8FF35';
+                return /^#[0-9a-fA-F]{6}$/.test(color || '') ? color : '#00F4C8';
             }
 
             function normalizeAttributeList(attributes) {
@@ -1176,7 +1176,7 @@
 
                     normalized.set(attributeKey(label), {
                         label,
-                        color: cleanAttributeColor(typeof attribute === 'string' ? '#B8FF35' : attribute.color),
+                        color: cleanAttributeColor(typeof attribute === 'string' ? '#00F4C8' : attribute.color),
                     });
                 });
 

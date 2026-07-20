@@ -100,7 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .custom-block { border: 1px solid #1E1E30; background: #0F0F1A; border-radius: 12px; padding: 1.5rem; margin: 2rem 0; position: relative; font-family: 'DM Sans', sans-serif; color: #E8E8F0; }
         .custom-block p:last-child { margin-bottom: 0; }
         .custom-block::before { display: flex; align-items: center; font-family: 'DM Mono', monospace; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; margin-bottom: 1rem; text-transform: uppercase; }
-        .block-key-takeaway { border-color: rgba(184, 255, 53, 0.3); } .block-key-takeaway::before { content: "• KEY TAKEAWAY"; color: #B8FF35; }
+        .block-key-takeaway { border-color: rgba(0, 244, 200, 0.3); } .block-key-takeaway::before { content: "• KEY TAKEAWAY"; color: #00F4C8; }
         .block-quote { border: none; border-left: 3px solid #9B59B6; background: transparent; padding: 1rem 1.5rem; border-radius: 0; font-style: italic; font-size: 1.1rem; color: #E8E8F0; } .block-quote::before { content: "”"; font-family: 'Syne', sans-serif; font-size: 3rem; line-height: 0; color: #9B59B6; opacity: 0.3; position: absolute; top: 10px; left: -20px; }
         .block-suggestion { border-color: rgba(0, 255, 204, 0.3); } .block-suggestion::before { content: "✦ SUGGESTION"; color: #00FFCC; }
         .block-so-what { border-color: rgba(255, 159, 67, 0.3); } .block-so-what::before { content: "🤔 SO WHAT?"; color: #FF9F43; }
@@ -1281,7 +1281,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const fieldTypeSelect = document.getElementById('type');
     const valuesSelect = $('#values');
     const form = document.querySelector('.create-form') || document.querySelector('.edit-form');
-     const existingTranslations = window.existingTranslations || {};
+    const existingTranslations = window.existingTranslations || {};
+
+    if (!fieldTypeSelect || valuesSelect.length === 0) return;
 
     function updateTranslationInputs() {
         const values = valuesSelect.val() || [];
@@ -1444,25 +1446,31 @@ $('#state_translation').on('change', function () {
 
 });
 // Search filter
-document.getElementById('countrySearchInput').addEventListener('keyup', function() {
-    let filter = this.value.toLowerCase();
-    document.querySelectorAll('#countryModal .col-md-3').forEach(function(div) {
-        let label = div.querySelector('label');
-        if (label.textContent.toLowerCase().indexOf(filter) > -1) {
-            div.style.display = '';
-        } else {
-            div.style.display = 'none';
-        }
+const countrySearchInput = document.getElementById('countrySearchInput');
+if (countrySearchInput) {
+    countrySearchInput.addEventListener('keyup', function() {
+        let filter = this.value.toLowerCase();
+        document.querySelectorAll('#countryModal .col-md-3').forEach(function(div) {
+            let label = div.querySelector('label');
+            if (label && label.textContent.toLowerCase().indexOf(filter) > -1) {
+                div.style.display = '';
+            } else {
+                div.style.display = 'none';
+            }
+        });
     });
-});
+}
 
 // Select all logic
-document.getElementById('selectAllCountries').addEventListener('change', function() {
-    let checked = this.checked;
-    document.querySelectorAll('#countryModal input[type="checkbox"][name="countries[]"]:not(:disabled)').forEach(function(box) {
-        box.checked = checked;
+const selectAllCountries = document.getElementById('selectAllCountries');
+if (selectAllCountries) {
+    selectAllCountries.addEventListener('change', function() {
+        let checked = this.checked;
+        document.querySelectorAll('#countryModal input[type="checkbox"][name="countries[]"]:not(:disabled)').forEach(function(box) {
+            box.checked = checked;
+        });
     });
-});
+}
 function showSweetAlertForDataConfirmPopup(url, method, options = {}) {
 
     let opt = {

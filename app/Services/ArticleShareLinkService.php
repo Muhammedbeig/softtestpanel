@@ -103,7 +103,7 @@ class ArticleShareLinkService
 
     private function siteUrl(): string
     {
-        return rtrim(Setting::where('name', 'website_url')->value('value') ?: 'https://searchenginebasics.io', '/');
+        return rtrim(Setting::where('name', 'website_url')->value('value') ?: config('services.site.url'), '/');
     }
 
     private function uniqueShareCode(Blog $blog, string $platform, ?int $ignoreId = null): string

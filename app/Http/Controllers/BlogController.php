@@ -73,7 +73,7 @@ class BlogController extends Controller
                 'tags' => implode(',', $request->input('tags.1') ?? []),
                 'category' => $category?->name,
                 'read_time' => $request->input('read_time') ?: $this->estimateReadTime($description),
-                'accent_color' => $request->input('accent_color') ?: '#B8FF35',
+                'accent_color' => $request->input('accent_color') ?: config('services.site.accent_color'),
                 'content_attributes' => $this->normalizeAttributes($request->input('content_attributes')),
                 'is_featured' => $request->boolean('is_featured'),
                 'status' => $status,
@@ -203,7 +203,7 @@ class BlogController extends Controller
                 'tags' => implode(',', $request->input('tags.1') ?? []),
                 'category' => $category?->name,
                 'read_time' => $request->input('read_time') ?: $this->estimateReadTime($description),
-                'accent_color' => $request->input('accent_color') ?: '#B8FF35',
+                'accent_color' => $request->input('accent_color') ?: config('services.site.accent_color'),
                 'content_attributes' => $this->normalizeAttributes(
                     $request->input('content_attributes'),
                     $blog->content_attributes ?? [],
@@ -390,7 +390,7 @@ class BlogController extends Controller
             ->get(['label', 'color'])
             ->map(fn (BlogAttributePreset $preset) => [
                 'label' => $preset->label,
-                'color' => $this->validHexColor($preset->color) ? $preset->color : '#B8FF35',
+                'color' => $this->validHexColor($preset->color) ? $preset->color : config('services.site.accent_color'),
             ])
             ->values()
             ->all();
@@ -531,7 +531,7 @@ class BlogController extends Controller
         $normalized = collect($attributes)
             ->map(function ($attribute) {
                 if (is_string($attribute)) {
-                    $attribute = ['label' => $attribute, 'color' => '#B8FF35'];
+                    $attribute = ['label' => $attribute, 'color' => config('services.site.accent_color')];
                 }
 
                 if (! is_array($attribute)) {
@@ -547,7 +547,7 @@ class BlogController extends Controller
                     'label' => $label,
                     'color' => $this->validHexColor($attribute['color'] ?? '')
                         ? $attribute['color']
-                        : '#B8FF35',
+                        : config('services.site.accent_color'),
                 ];
             })
             ->filter()

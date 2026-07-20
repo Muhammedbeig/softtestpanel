@@ -33,15 +33,15 @@ class PublicContentController extends Controller
                 'gtm_container_id',
                 'default_share_thumbnail',
             ]);
-            $siteUrl = rtrim($settings['website_url'] ?: 'https://searchenginebasics.io', '/');
+            $siteUrl = rtrim($settings['website_url'] ?: config('services.site.url'), '/');
 
             return [
                 'error' => false,
                 'data' => [
-                    'brand_name' => $settings['company_name'] ?: 'Search Engine Basics',
-                    'domain' => 'searchenginebasics.io',
+                    'brand_name' => $settings['company_name'] ?: config('services.site.name'),
+                    'domain' => config('services.site.domain'),
                     'site_url' => $siteUrl,
-                    'contact_email' => $settings['company_email'] ?: 'hello@searchenginebasics.io',
+                    'contact_email' => $settings['company_email'] ?: config('services.site.contact_email'),
                     'google_site_verification' => $settings['google_site_verification'] ?: config('services.google.site_verification'),
                     'gtm_container_id' => $settings['gtm_container_id'] ?: config('services.google.gtm_container_id'),
                     'default_thumbnail' => $settings['default_share_thumbnail'],
@@ -274,7 +274,7 @@ class PublicContentController extends Controller
             'readTime' => $blog->read_time ?: $this->estimateReadTime($description),
             'date' => optional($blog->published_at ?? $blog->created_at)->format('M j, Y'),
             'updatedOn' => $blog->updated_on ? $blog->updated_on->format('M j, Y') : null,
-            'accent' => $blog->accent_color ?: '#B8FF35',
+            'accent' => $blog->accent_color ?: config('services.site.accent_color'),
             'sort_order' => (int) ($blog->sort_order ?? 0),
             'attributes' => $this->normalizeAttributes($blog->content_attributes),
             'previewHeadings' => $this->extractHeadings($description),
@@ -415,7 +415,7 @@ class PublicContentController extends Controller
             'content' => $category->series_content,
             'image' => $category->image,
             'icon' => $category->icon,
-            'accent' => $category->accent_color ?: '#B8FF35',
+            'accent' => $category->accent_color ?: config('services.site.accent_color'),
             'show_in_nav' => (bool) $category->show_in_header_nav,
             'nav_order' => (int) $category->header_nav_order,
             'show_in_header_nav' => (bool) $category->show_in_header_nav,
@@ -443,7 +443,7 @@ class PublicContentController extends Controller
             'sort_order' => (int) ($article->sort_order ?? 0),
             'excerpt' => $article->excerpt ?: Str::limit(trim(preg_replace('/\s+/', ' ', strip_tags($description))), 320),
             'date' => optional($article->published_at ?? $article->created_at)->format('M j, Y'),
-            'accent' => $article->accent_color ?: '#B8FF35',
+            'accent' => $article->accent_color ?: config('services.site.accent_color'),
             'attributes' => $this->normalizeAttributes($article->content_attributes),
             'previewHeadings' => $this->extractHeadings($description),
             'isCurrent' => $currentId ? $article->id === $currentId : false,
@@ -488,7 +488,7 @@ class PublicContentController extends Controller
         return collect($attributes)
             ->map(function ($attribute) {
                 if (is_string($attribute)) {
-                    return ['label' => $attribute, 'color' => '#B8FF35'];
+                    return ['label' => $attribute, 'color' => config('services.site.accent_color')];
                 }
 
                 $label = trim((string) ($attribute['label'] ?? ''));
@@ -500,7 +500,7 @@ class PublicContentController extends Controller
                     'label' => $label,
                     'color' => preg_match('/^#[0-9a-fA-F]{6}$/', $attribute['color'] ?? '')
                         ? $attribute['color']
-                        : '#B8FF35',
+                        : config('services.site.accent_color'),
                 ];
             })
             ->filter()

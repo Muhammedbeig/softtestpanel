@@ -41,4 +41,12 @@ return [
         'revalidate_secret' => env('FRONTEND_REVALIDATE_SECRET'),
     ],
 
+    'site' => [
+        'name' => env('SITE_NAME', 'Software Testing Basics'),
+        'domain' => env('SITE_DOMAIN', 'softwaretestingbasics.io'),
+        'url' => env('SITE_URL', 'https://softwaretestingbasics.io'),
+        'contact_email' => env('SITE_CONTACT_EMAIL', 'hello@softwaretestingbasics.io'),
+        'accent_color' => env('SITE_ACCENT_COLOR', '#00F4C8'),
+    ],
+
 ];

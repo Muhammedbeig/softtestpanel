@@ -15,10 +15,9 @@ class DatabaseSeeder extends Seeder
     public function run()
     {
         $this->call([
+            SoftwareTestingBasicsSchemaSeeder::class,
             InstallationSeeder::class,
-            SystemUpgradeSeeder::class,
-            SearchEngineBasicsArticleSeeder::class,
-            SearchEngineBasicsSiteSeeder::class,
+            SoftwareTestingBasicsSeeder::class,
         ]);
     }
 }

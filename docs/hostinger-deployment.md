@@ -10,7 +10,7 @@ GitHub Actions packages the checked-out panel source and uploads that release ar
 
 Required:
 
-- `HOSTINGER_SSH_HOST`: `147.93.93.168`
+- `HOSTINGER_SSH_HOST`: Hostinger SSH hostname or IP
 - `HOSTINGER_SSH_PORT`: `65002`
 - `HOSTINGER_SSH_USER`: Hostinger SSH user
 - One of:
@@ -19,48 +19,49 @@ Required:
 
 Optional:
 
-- `PANEL_APP_DIR`: defaults to `~/apps/seb.panel`
+- `PANEL_APP_DIR`: defaults to `~/apps/softtestpanel`
 - `PANEL_LIVE_PUBLIC_LINK`: symlink path used as the Laravel live app root
 - `PANEL_LIVE_TARGET`: defaults to `root`; use `public` only when the domain document root points directly at Laravel `public`
 - `PANEL_ACTIVATE_LIVE`: set to `1` only when this deployment should switch `PANEL_LIVE_PUBLIC_LINK`
 - `PANEL_RUN_MIGRATIONS`: set to `1` only when this deployment should run `php artisan migrate --force`
+- `PANEL_RUN_SEEDERS`: set to `1` only for the initial empty database import; leave it `0` afterward
 - `PANEL_PHP_BIN`: defaults to `php`
 - `PANEL_COMPOSER_BIN`: defaults to `composer`
-- `PANEL_HEALTH_URL`: example `https://panel.searchenginebasics.io`
+- `PANEL_HEALTH_URL`: `https://panel.softwaretestingbasics.io`
 
 ## Hostinger One-Time Setup
 
 Create shared folders:
 
 ```bash
-mkdir -p ~/apps/seb.panel/shared/storage
+mkdir -p ~/apps/softtestpanel/shared/storage
 ```
 
 Put the production env file here:
 
 ```bash
-~/apps/seb.panel/shared/.env
+~/apps/softtestpanel/shared/.env
 ```
 
-The deploy script creates a new release under `~/apps/seb.panel/releases`, links `.env` and shared `storage`, installs Composer dependencies, checks migration status, builds Laravel caches, then switches `current` only after the release is ready. It runs real migrations only when `PANEL_RUN_MIGRATIONS=1`.
+The deploy script creates a new release under `~/apps/softtestpanel/releases`, links `.env` and shared `storage`, installs Composer dependencies, optionally runs migrations or the initial seeder, builds Laravel caches, then switches `current` only after the release is ready.
 
 The current Hostinger panel files are under:
 
 ```bash
-~/domains/searchenginebasics.io/public_html/panel
+~/domains/softwaretestingbasics.io/public_html/panel
 ```
 
 For near-zero downtime, move that existing folder into the first release/shared layout once, then make it a symlink:
 
 ```bash
-~/domains/searchenginebasics.io/public_html/panel -> ~/apps/seb.panel/current
+~/domains/softwaretestingbasics.io/public_html/panel -> ~/apps/softtestpanel/current/public
 ```
 
 Then set:
 
 ```txt
-PANEL_LIVE_PUBLIC_LINK=/home/u680035976/domains/searchenginebasics.io/public_html/panel
-PANEL_LIVE_TARGET=root
+PANEL_LIVE_PUBLIC_LINK=/home/USER/domains/softwaretestingbasics.io/public_html/panel
+PANEL_LIVE_TARGET=public
 PANEL_ACTIVATE_LIVE=1
 ```
 
