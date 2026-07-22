@@ -13,6 +13,7 @@ use App\Services\CachingService;
 use App\Services\FileService;
 use App\Services\HelperService;
 use App\Services\ArticleShareLinkService;
+use App\Services\ArticleContentNormalizer;
 use App\Services\PublicContentCacheService;
 use App\Services\ResponseService;
 use Carbon\Carbon;
@@ -27,10 +28,12 @@ use Throwable;
 class BlogController extends Controller
 {
     private string $uploadFolder;
+    private ArticleContentNormalizer $articleContentNormalizer;
 
-    public function __construct()
+    public function __construct(ArticleContentNormalizer $articleContentNormalizer)
     {
         $this->uploadFolder = 'blog';
+        $this->articleContentNormalizer = $articleContentNormalizer;
     }
 
     public function index()
@@ -57,6 +60,7 @@ class BlogController extends Controller
         ResponseService::noPermissionThenSendJson('blog-create');
 
         $request->validate($this->rules());
+        $this->normalizeArticleDescriptions($request);
 
         try {
             $description = $request->input('blog_description.1') ?? '';
@@ -94,12 +98,16 @@ class BlogController extends Controller
                 $data['image'] = $uploadedImage;
             }
 
-            $blog = Blog::create($data);
-            $this->syncAttributePresets($request);
-            $this->syncContributors($blog, $request);
-            $this->syncArticleFaqs($blog, $request);
-            $this->saveTranslations($request, $blog);
-            app(ArticleShareLinkService::class)->syncForBlog($blog);
+            $blog = DB::transaction(function () use ($data, $request): Blog {
+                $blog = Blog::create($data);
+                $this->syncAttributePresets($request);
+                $this->syncContributors($blog, $request);
+                $this->syncArticleFaqs($blog, $request);
+                $this->saveTranslations($request, $blog);
+                app(ArticleShareLinkService::class)->syncForBlog($blog);
+
+                return $blog;
+            });
             PublicContentCacheService::invalidate();
 
             return redirect(route('blog.index'))->with('success', trans('Blog Added Successfully'));
@@ -171,13 +179,25 @@ class BlogController extends Controller
         ResponseService::noPermissionThenRedirect('blog-update');
 
         $blog = Blog::with(['translations', 'seriesCategory', 'additionalAuthors', 'reviewers', 'editors', 'faqs', 'updatedByAuthor'])->findOrFail($id);
-        $authors = Author::where('status', true)->orderBy('name')->get();
+        $contributorSelections = DB::table('blog_contributors')
+            ->where('blog_id', $blog->id)
+            ->get()
+            ->groupBy('contribution_type')
+            ->map(fn ($rows) => $rows->pluck('author_id')->map(fn ($authorId) => (int) $authorId)->values()->all())
+            ->all();
+        $assignedAuthorIds = collect($contributorSelections)->flatten()->push($blog->author_id, $blog->updated_by_author_id)->filter()->unique()->values();
+        $authors = Author::query()
+            ->where(function ($query) use ($assignedAuthorIds) {
+                $query->where('status', true)->orWhereIn('id', $assignedAuthorIds);
+            })
+            ->orderBy('name')
+            ->get();
         $categories = Category::where('status', true)->orderBy('sequence')->orderBy('name')->get();
         $languages = CachingService::getLanguages()->values();
         $translations = $blog->translations->keyBy('language_id');
         $attributePresets = $this->attributePresets();
 
-        return view('blog.edit', compact('blog', 'authors', 'categories', 'languages', 'translations', 'attributePresets'));
+        return view('blog.edit', compact('blog', 'authors', 'categories', 'languages', 'translations', 'attributePresets', 'contributorSelections'));
     }
 
     public function update(Request $request, $id)
@@ -185,6 +205,7 @@ class BlogController extends Controller
         ResponseService::noPermissionThenSendJson('blog-update');
 
         $request->validate($this->rules($id));
+        $this->normalizeArticleDescriptions($request);
 
         try {
             $blog = Blog::findOrFail($id);
@@ -231,12 +252,14 @@ class BlogController extends Controller
                 $data['is_featured'] = $request->boolean('is_featured');
             }
 
-            $blog->update($data);
-            $this->syncAttributePresets($request);
-            $this->syncContributors($blog, $request);
-            $this->syncArticleFaqs($blog, $request);
-            $this->saveTranslations($request, $blog);
-            app(ArticleShareLinkService::class)->syncForBlog($blog);
+            DB::transaction(function () use ($blog, $data, $request): void {
+                $blog->update($data);
+                $this->syncAttributePresets($request);
+                $this->syncContributors($blog, $request);
+                $this->syncArticleFaqs($blog, $request);
+                $this->saveTranslations($request, $blog);
+                app(ArticleShareLinkService::class)->syncForBlog($blog);
+            });
             PublicContentCacheService::invalidate();
 
             return redirect(route('blog.index'))->with('success', trans('Blog Updated Successfully'));
@@ -346,15 +369,39 @@ class BlogController extends Controller
 
         DB::table('blog_contributors')->where('blog_id', $blog->id)->delete();
 
-        foreach (collect($rows)->unique(fn ($row) => $row['author_id'].'-'.$row['contribution_type']) as $row) {
-            DB::table('blog_contributors')->insert([
+        $inserts = collect($rows)
+            ->unique(fn ($row) => $row['author_id'].'-'.$row['contribution_type'])
+            ->map(fn ($row) => [
                 'blog_id' => $blog->id,
                 'author_id' => $row['author_id'],
                 'contribution_type' => $row['contribution_type'],
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]);
+            ])
+            ->values()
+            ->all();
+
+        if ($inserts !== []) {
+            DB::table('blog_contributors')->insert($inserts);
         }
+    }
+
+    private function normalizeArticleDescriptions(Request $request): void
+    {
+        $descriptions = $request->input('blog_description', []);
+        if (! is_array($descriptions)) {
+            return;
+        }
+
+        $articleNumber = (int) $request->input('sort_order', 0) ?: null;
+        foreach ($descriptions as $languageId => $description) {
+            $descriptions[$languageId] = $this->articleContentNormalizer->normalize(
+                (string) $description,
+                $articleNumber
+            );
+        }
+
+        $request->merge(['blog_description' => $descriptions]);
     }
 
     private function saveTranslations(Request $request, Blog $blog): void
@@ -366,9 +413,12 @@ class BlogController extends Controller
 
             $translatedTitle = $request->input("title.$langId");
             $translatedDesc = $request->input("blog_description.$langId");
-            $translatedTags = $request->input("tags.$langId", []);
+            $translatedTags = array_values(array_filter(
+                (array) $request->input("tags.$langId", []),
+                static fn ($tag) => trim((string) $tag) !== ''
+            ));
 
-            if ($translatedTitle || $translatedDesc || ! empty($translatedTags)) {
+            if (trim((string) $translatedTitle) !== '' || $this->hasEditorContent($translatedDesc) || $translatedTags !== []) {
                 BlogTranslation::updateOrCreate(
                     ['blog_id' => $blog->id, 'language_id' => $langId],
                     [
@@ -377,8 +427,23 @@ class BlogController extends Controller
                         'tags' => implode(',', $translatedTags),
                     ]
                 );
+            } else {
+                BlogTranslation::query()
+                    ->where('blog_id', $blog->id)
+                    ->where('language_id', $langId)
+                    ->delete();
             }
         }
+    }
+
+    private function hasEditorContent(?string $html): bool
+    {
+        $text = trim(str_replace("\u{00A0}", ' ', html_entity_decode(strip_tags((string) $html))));
+        if ($text !== '') {
+            return true;
+        }
+
+        return preg_match('~<(?:img|video|audio|iframe|table|pre|ul|ol|blockquote|hr)\b~i', (string) $html) === 1;
     }
 
     private function attributePresets(): array

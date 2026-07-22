@@ -13,6 +13,7 @@ use App\Models\NewsletterSubscriber;
 use App\Models\SearchQuery;
 use App\Models\Setting;
 use App\Services\ArticleShareLinkService;
+use App\Services\ArticleContentNormalizer;
 use App\Services\PublicContentCacheService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -63,7 +64,7 @@ class PublicContentController extends Controller
     public function blogs(Request $request)
     {
         return $this->cachedJson($request->fullUrl(), function () use ($request) {
-            $query = Blog::with(['seriesCategory:id,name,slug,series_title,accent_color', 'author:id,name,slug,role,bio,avatar,website_url,status', 'updatedByAuthor:id,name,slug,role,bio,avatar,website_url,status', 'additionalAuthors', 'reviewers', 'editors', 'shareLinks'])
+            $query = Blog::with(['seriesCategory:id,name,slug,series_title,accent_color', 'author:id,name,slug,role,bio,avatar,website_url,social_links,status', 'updatedByAuthor:id,name,slug,role,bio,avatar,website_url,social_links,status', 'additionalAuthors', 'reviewers', 'editors', 'shareLinks'])
                 ->where('status', 'published')
                 ->when($request->boolean('featured'), fn ($q) => $q->where('is_featured', true))
                 ->when($request->filled('category'), function ($q) use ($request) {
@@ -109,7 +110,7 @@ class PublicContentController extends Controller
     public function blog(string $slug)
     {
         return $this->cachedJson('blog:'.$slug, function () use ($slug) {
-            $blog = Blog::with(['seriesCategory', 'author:id,name,slug,role,bio,avatar,website_url,status', 'updatedByAuthor:id,name,slug,role,bio,avatar,website_url,status', 'additionalAuthors', 'reviewers', 'editors', 'faqs', 'shareLinks'])
+            $blog = Blog::with(['seriesCategory', 'author:id,name,slug,role,bio,avatar,website_url,social_links,status', 'updatedByAuthor:id,name,slug,role,bio,avatar,website_url,social_links,status', 'additionalAuthors', 'reviewers', 'editors', 'faqs', 'shareLinks'])
                 ->where('slug', $slug)
                 ->where('status', 'published')
                 ->firstOrFail();
@@ -257,7 +258,7 @@ class PublicContentController extends Controller
 
     private function blogPayload(Blog $blog, bool $includeContent = false): array
     {
-        $description = $blog->description ?? '';
+        $description = app(ArticleContentNormalizer::class)->canonicalizeStorageImages($blog->description ?? '');
         $category = $blog->seriesCategory;
         $categoryTitle = $category?->series_title ?: $category?->name;
         $payload = [
@@ -274,6 +275,9 @@ class PublicContentController extends Controller
             'readTime' => $blog->read_time ?: $this->estimateReadTime($description),
             'date' => optional($blog->published_at ?? $blog->created_at)->format('M j, Y'),
             'updatedOn' => $blog->updated_on ? $blog->updated_on->format('M j, Y') : null,
+            'publishedAt' => $blog->published_at?->toIso8601String(),
+            'updatedOnIso' => $blog->updated_on?->toDateString(),
+            'updatedAt' => $blog->updated_at?->toIso8601String(),
             'accent' => $blog->accent_color ?: config('services.site.accent_color'),
             'sort_order' => (int) ($blog->sort_order ?? 0),
             'attributes' => $this->normalizeAttributes($blog->content_attributes),
@@ -350,7 +354,7 @@ class PublicContentController extends Controller
     public function articles(Request $request)
     {
         return $this->cachedJson($request->fullUrl(), function () use ($request) {
-            $query = \App\Models\Blog::with(['author:id,name,slug,role,bio,avatar,status', 'shareLinks'])
+            $query = \App\Models\Blog::with(['author:id,name,slug,role,bio,avatar,website_url,social_links,status', 'shareLinks'])
                 ->where('status', 'published')
                 ->orderByDesc('id');
 
@@ -368,7 +372,7 @@ class PublicContentController extends Controller
     public function search(Request $request)
     {
         return $this->cachedJson($request->fullUrl(), function () use ($request) {
-            $query = Blog::with(['seriesCategory:id,name,slug,series_title,accent_color', 'author:id,name,slug,role,bio,avatar,status', 'shareLinks'])
+            $query = Blog::with(['seriesCategory:id,name,slug,series_title,accent_color', 'author:id,name,slug,role,bio,avatar,website_url,social_links,status', 'shareLinks'])
                 ->where('status', 'published');
 
             if ($request->filled('q')) {

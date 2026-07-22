@@ -3,6 +3,10 @@
     $categories = $categories ?? collect();
     $translations = $translations ?? collect();
     $attributePresets = $attributePresets ?? [];
+    $contributorSelections = $contributorSelections ?? [];
+    $selectedAdditionalAuthors = old('additional_authors', $contributorSelections['author'] ?? $blog?->additionalAuthors?->pluck('id')->toArray() ?? []);
+    $selectedReviewers = old('reviewers', $contributorSelections['reviewer'] ?? $blog?->reviewers?->pluck('id')->toArray() ?? []);
+    $selectedEditors = old('editors', $contributorSelections['editor'] ?? $blog?->editors?->pluck('id')->toArray() ?? []);
     $rawAttributes = old('content_attributes', $blog?->content_attributes ?? []);
 
     if (is_string($rawAttributes)) {
@@ -98,18 +102,18 @@
                     <select name="author_id" class="form-control">
                         <option value="">{{ __('Select Author') }}</option>
                         @foreach($authors as $author)
-                            <option value="{{ $author->id }}" @selected(old('author_id', $blog?->author_id) == $author->id)>{{ $author->name }}</option>
+                            <option value="{{ $author->id }}" @selected(old('author_id', $blog?->author_id) == $author->id)>{{ $author->name }}{{ $author->status ? '' : ' (inactive)' }}</option>
                         @endforeach
                     </select>
                 </div>
             </div>
-            <input type="hidden" name="contributors_touched" id="contributors-touched" value="0">
+            <input type="hidden" name="contributors_touched" id="contributors-touched" value="1">
             <div class="col-md-4">
                 <div class="form-group">
                     <label>{{ __('Additional Authors') }}</label>
                     <select name="additional_authors[]" class="form-control select2 w-100 contributor-select" multiple="multiple" data-placeholder="{{ __('Select Authors') }}">
                         @foreach($authors as $author)
-                            <option value="{{ $author->id }}" @selected(in_array($author->id, old('additional_authors', $blog?->additionalAuthors->pluck('id')->toArray() ?? [])))>{{ $author->name }}</option>
+                            <option value="{{ $author->id }}" @selected(in_array($author->id, $selectedAdditionalAuthors))>{{ $author->name }}{{ $author->status ? '' : ' (inactive)' }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -119,7 +123,7 @@
                     <label>{{ __('Reviewers') }}</label>
                     <select name="reviewers[]" class="form-control select2 w-100 contributor-select" multiple="multiple" data-placeholder="{{ __('Select Reviewers') }}">
                         @foreach($authors as $author)
-                            <option value="{{ $author->id }}" @selected(in_array($author->id, old('reviewers', $blog?->reviewers->pluck('id')->toArray() ?? [])))>{{ $author->name }}</option>
+                            <option value="{{ $author->id }}" @selected(in_array($author->id, $selectedReviewers))>{{ $author->name }}{{ $author->status ? '' : ' (inactive)' }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -129,7 +133,7 @@
                     <label>{{ __('Editors') }}</label>
                     <select name="editors[]" class="form-control select2 w-100 contributor-select" multiple="multiple" data-placeholder="{{ __('Select Editors') }}">
                         @foreach($authors as $author)
-                            <option value="{{ $author->id }}" @selected(in_array($author->id, old('editors', $blog?->editors->pluck('id')->toArray() ?? [])))>{{ $author->name }}</option>
+                            <option value="{{ $author->id }}" @selected(in_array($author->id, $selectedEditors))>{{ $author->name }}{{ $author->status ? '' : ' (inactive)' }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -173,7 +177,7 @@
                     <select name="updated_by_author_id" class="form-control">
                         <option value="">{{ __('Select Author') }}</option>
                         @foreach($authors as $author)
-                            <option value="{{ $author->id }}" @selected(old('updated_by_author_id', $blog?->updated_by_author_id) == $author->id)>{{ $author->name }}</option>
+                            <option value="{{ $author->id }}" @selected(old('updated_by_author_id', $blog?->updated_by_author_id) == $author->id)>{{ $author->name }}{{ $author->status ? '' : ' (inactive)' }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -399,13 +403,12 @@
 </div>
 
 @section('script')
+    <script src="{{ asset('assets/js/blog-citations.js') }}"></script>
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const contributorsTouched = document.getElementById('contributors-touched');
-            document.querySelectorAll('.contributor-select').forEach((select) => {
-                select.addEventListener('change', () => {
-                    contributorsTouched.value = '1';
-                });
+            $('.contributor-select').on('change', function () {
+                contributorsTouched.value = '1';
             });
 
             const editorImageUploadUrl = @json(route('blog.upload-editor-image'));
@@ -463,7 +466,11 @@
                 menubar: false,
                 plugins: 'lists link table code wordcount',
                 toolbar_mode: 'wrap',
-                toolbar: 'undo redo | formatselect styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist | link table imageUpload | citationButton sourceButton equationBlock codeBlock htmlBlock clearFormatting | removeformat | code',
+                toolbar: 'undo redo | formatselect styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist | link table imageUpload | citationButton sourceButton normalizeSources equationBlock codeBlock htmlBlock clearFormatting | removeformat | code',
+                convert_urls: true,
+                relative_urls: false,
+                remove_script_host: false,
+                document_base_url: @json(rtrim(config('app.url'), '/') . '/'),
                 block_formats: 'Paragraph=p; Heading 2=h2; Heading 3=h3; Heading 4=h4; Heading 5=h5; Heading 6=h6',
                 extended_valid_elements: 'section[class|id],ol[class|id],li[class|id],a[class|href|title|target|rel],span[class|style|data-href],sup[class],pre[class|id],code[class],div[class|style|data-html-block|contenteditable],img[src|alt|title|width|height|style|class|loading]',
                 valid_children: '+a[span|sup],+span[a|span|sup],+pre[code],+code[span]',
@@ -817,6 +824,54 @@
                         return articleNumber ? 'source-article-' + articleNumber + '-' + sourceNumber : 'source-' + sourceNumber;
                     }
 
+                    let citationNormalizationActive = false;
+                    let citationNormalizationTimer = null;
+
+                    function normalizeCitationGraph(saveEditor = true) {
+                        if (citationNormalizationActive || !window.BlogCitationManager) {
+                            return null;
+                        }
+
+                        citationNormalizationActive = true;
+                        try {
+                            const result = window.BlogCitationManager.normalize(editor.getBody(), {
+                                targetForNumber: function (number) {
+                                    return defaultSourceTarget(String(number));
+                                }
+                            });
+
+                            if (result.changed) {
+                                editor.setDirty(true);
+                                editor.nodeChanged();
+                                if (saveEditor) editor.save();
+                            }
+
+                            return result;
+                        } finally {
+                            citationNormalizationActive = false;
+                        }
+                    }
+
+                    function scheduleCitationNormalization() {
+                        window.clearTimeout(citationNormalizationTimer);
+                        citationNormalizationTimer = window.setTimeout(function () {
+                            normalizeCitationGraph();
+                        }, 80);
+                    }
+
+                    function mutationTouchesSources(mutation) {
+                        if (mutation.target instanceof Element && mutation.target.closest('.article-sources')) {
+                            return true;
+                        }
+
+                        return Array.from(mutation.addedNodes).concat(Array.from(mutation.removedNodes)).some(function (node) {
+                            return node instanceof Element && (
+                                node.matches('.article-sources, .article-sources li')
+                                || node.querySelector('.article-sources, .article-sources li')
+                            );
+                        });
+                    }
+
                     function sourceSection() {
                         return editor.getBody().querySelector('section.article-sources');
                     }
@@ -1011,7 +1066,7 @@
                                     const citationHtml = sourceCitationHtml(data.citation || 'Source ' + sourceNumber, data.url, data.linkText);
                                     item.innerHTML = '<p>' + citationHtml + '</p>';
                                     editor.selection.select(item);
-                                    editor.save();
+                                    normalizeCitationGraph();
                                     api.close();
                                 }
                             });
@@ -1022,6 +1077,19 @@
                         text: 'Upload',
                         tooltip: 'Upload image at cursor',
                         onAction: uploadImageAtSelection
+                    });
+
+                    editor.ui.registry.addButton('normalizeSources', {
+                        text: 'Renumber',
+                        tooltip: 'Renumber sources and linked citations',
+                        onAction: function () {
+                            const result = normalizeCitationGraph();
+                            editor.notificationManager.open({
+                                text: result && result.changed ? 'Sources and citations renumbered.' : 'Source numbering is already current.',
+                                type: 'info',
+                                timeout: 2200
+                            });
+                        }
                     });
 
                     editor.ui.registry.addButton('equationBlock', {
@@ -1053,6 +1121,16 @@
                     });
 
                     editor.on('init SetContent', highlightCodeBlocks);
+                    editor.on('init', function () {
+                        const observer = new MutationObserver(function (mutations) {
+                            if (mutations.some(mutationTouchesSources)) scheduleCitationNormalization();
+                        });
+                        observer.observe(editor.getBody(), { childList: true, subtree: true });
+                        editor.on('remove', function () { observer.disconnect(); });
+                        normalizeCitationGraph(false);
+                    });
+                    editor.on('Undo Redo', scheduleCitationNormalization);
+                    editor.on('BeforeGetContent', function () { normalizeCitationGraph(false); });
 
                     editor.ui.registry.addButton('htmlBlock', {
                         text: 'HTML',

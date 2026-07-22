@@ -6,8 +6,8 @@ on:
       - main
   workflow_dispatch:
     inputs:
-      sync_software_testing_articles:
-        description: Refresh the two cited Software Testing Basics articles in the production database
+      repair_software_testing_basics_images:
+        description: Canonicalize only the broken image URLs in the software-testing-basics article
         required: false
         default: false
         type: boolean
@@ -40,11 +40,10 @@ jobs:
           PANEL_LIVE_TARGET: ${{ secrets.PANEL_LIVE_TARGET }}
           PANEL_ACTIVATE_LIVE: ${{ secrets.PANEL_ACTIVATE_LIVE }}
           PANEL_RUN_MIGRATIONS: ${{ secrets.PANEL_RUN_MIGRATIONS }}
-          PANEL_RUN_SEEDERS: ${{ secrets.PANEL_RUN_SEEDERS }}
           PANEL_PHP_BIN: ${{ secrets.PANEL_PHP_BIN }}
           PANEL_COMPOSER_BIN: ${{ secrets.PANEL_COMPOSER_BIN }}
           PANEL_HEALTH_URL: ${{ secrets.PANEL_HEALTH_URL }}
-          SYNC_SOFTWARE_TESTING_ARTICLES: ${{ inputs.sync_software_testing_articles && '1' || '0' }}
+          REPAIR_SOFTWARE_TESTING_BASICS_IMAGES: ${{ inputs.repair_software_testing_basics_images && '1' || '0' }}
         run: |
           set -euo pipefail
 
@@ -82,6 +81,8 @@ jobs:
             "BRANCH=main"
             "GITHUB_SHA=$GITHUB_SHA"
             "ARTIFACT_PATH=$remote_artifact"
+            "RUN_SEEDERS=0"
+            "SYNC_SOFTWARE_TESTING_ARTICLES=0"
           )
 
           [ -n "${PANEL_APP_DIR}" ] && remote_env+=("APP_DIR=$PANEL_APP_DIR")
@@ -91,10 +92,9 @@ jobs:
           fi
           [ -n "${PANEL_LIVE_TARGET}" ] && remote_env+=("LIVE_TARGET=$PANEL_LIVE_TARGET")
           [ -n "${PANEL_RUN_MIGRATIONS}" ] && remote_env+=("RUN_MIGRATIONS=$PANEL_RUN_MIGRATIONS")
-          [ -n "${PANEL_RUN_SEEDERS}" ] && remote_env+=("RUN_SEEDERS=$PANEL_RUN_SEEDERS")
           [ -n "${PANEL_PHP_BIN}" ] && remote_env+=("PHP_BIN=$PANEL_PHP_BIN")
           [ -n "${PANEL_COMPOSER_BIN}" ] && remote_env+=("COMPOSER_BIN=$PANEL_COMPOSER_BIN")
-          [ -n "${SYNC_SOFTWARE_TESTING_ARTICLES}" ] && remote_env+=("SYNC_SOFTWARE_TESTING_ARTICLES=$SYNC_SOFTWARE_TESTING_ARTICLES")
+          [ -n "${REPAIR_SOFTWARE_TESTING_BASICS_IMAGES}" ] && remote_env+=("REPAIR_SOFTWARE_TESTING_BASICS_IMAGES=$REPAIR_SOFTWARE_TESTING_BASICS_IMAGES")
 
           printf -v remote_prefix '%q ' "${remote_env[@]}"
 

@@ -13,6 +13,7 @@ KEEP_RELEASES="${KEEP_RELEASES:-5}"
 RUN_MIGRATIONS="${RUN_MIGRATIONS:-0}"
 RUN_SEEDERS="${RUN_SEEDERS:-0}"
 SYNC_SOFTWARE_TESTING_ARTICLES="${SYNC_SOFTWARE_TESTING_ARTICLES:-0}"
+REPAIR_SOFTWARE_TESTING_BASICS_IMAGES="${REPAIR_SOFTWARE_TESTING_BASICS_IMAGES:-0}"
 ARTIFACT_PATH="${ARTIFACT_PATH:-}"
 
 RELEASES_DIR="$APP_DIR/releases"
@@ -172,6 +173,12 @@ if [ "$SYNC_SOFTWARE_TESTING_ARTICLES" = "1" ]; then
   "$PHP_BIN" artisan content:sync-software-testing-articles --force
 else
   log "Skipping Software Testing Basics article sync"
+fi
+
+if [ "$REPAIR_SOFTWARE_TESTING_BASICS_IMAGES" = "1" ]; then
+  "$PHP_BIN" artisan content:normalize-article-images software-testing-basics --apply
+else
+  log "Skipping scoped Software Testing Basics image repair"
 fi
 
 if [ -e public/storage ] && [ ! -L public/storage ]; then
